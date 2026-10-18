@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { line } from '../src/input.js';
+import { line, wheelSteps } from '../src/input.js';
 
 test('line: single point', () => {
   assert.deepEqual(line(3, 4, 3, 4), [[3, 4]]);
@@ -32,4 +32,22 @@ test('line: steep and shallow lines are gap-free and hit both ends', () => {
       assert.ok(Math.abs(bx - ax) <= 1 && Math.abs(by - ay) <= 1, 'consecutive points touch');
     }
   }
+});
+
+test('wheelSteps: one zoom step per mouse notch across delta modes', () => {
+  const s = { acc: 0, time: 0 };
+  assert.equal(wheelSteps(s, 100, 0, 1000), -1, 'Chrome pixel notch zooms out');
+  assert.equal(wheelSteps(s, -100, 0, 2000), 1, 'reverse notch zooms in');
+  assert.equal(wheelSteps(s, -3, 1, 3000), 0, 'Firefox 3-line notch is just under one step…');
+  assert.equal(wheelSteps(s, -3, 1, 3010), 1, '…and the accumulator carries the rest');
+});
+
+test('wheelSteps: trackpad deltas accumulate and reset on pause or reversal', () => {
+  const s = { acc: 0, time: 0 };
+  let steps = 0;
+  for (let i = 0; i < 10; i++) steps += wheelSteps(s, -12, 0, 100 + i * 16);
+  assert.equal(steps, 1, '120px of small deltas is one step');
+  assert.equal(wheelSteps(s, -90, 0, 1000), 0, 'pause discards the remainder');
+  assert.equal(wheelSteps(s, 40, 0, 1010), 0, 'direction flip discards the remainder');
+  assert.equal(wheelSteps(s, 70, 0, 1020), -1);
 });

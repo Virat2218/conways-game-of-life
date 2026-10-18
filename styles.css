@@ -204,3 +204,7 @@ kbd {
   touch-action: none;
   cursor: crosshair;
 }
+
+#board.panning {
+  cursor: grabbing;
+}

@@ -6,6 +6,7 @@ import {
   visibleRange,
   fitZoomIndex,
   clampZoomIndex,
+  nearestZoomIndex,
 } from '../src/renderer.js';
 
 test('zoom levels match the spec', () => {
@@ -42,4 +43,12 @@ test('clampZoomIndex keeps indexes in range', () => {
   assert.equal(clampZoomIndex(-3), 0);
   assert.equal(clampZoomIndex(99), ZOOM_LEVELS.length - 1);
   assert.equal(clampZoomIndex(4), 4);
+});
+
+test('nearestZoomIndex snaps continuous sizes to the closest level', () => {
+  assert.equal(ZOOM_LEVELS[nearestZoomIndex(8)], 8);
+  assert.equal(ZOOM_LEVELS[nearestZoomIndex(8.9)], 8);
+  assert.equal(ZOOM_LEVELS[nearestZoomIndex(9.2)], 10);
+  assert.equal(ZOOM_LEVELS[nearestZoomIndex(0.2)], 1);
+  assert.equal(ZOOM_LEVELS[nearestZoomIndex(500)], 48);
 });

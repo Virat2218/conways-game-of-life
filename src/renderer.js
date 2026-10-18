@@ -40,6 +40,21 @@ export function fitZoomIndex(viewportCssWidth, viewportCssHeight, gridWidth, gri
   return best;
 }
 
+// Zoom level closest to a continuous cell size, compared on a log scale.
+export function nearestZoomIndex(cellCss) {
+  let best = 0;
+  let bestDist = Infinity;
+  const target = Math.log(Math.max(cellCss, 1e-6));
+  for (let i = 0; i < ZOOM_LEVELS.length; i++) {
+    const d = Math.abs(Math.log(ZOOM_LEVELS[i]) - target);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
 export function clampZoomIndex(index) {
   return Math.min(ZOOM_LEVELS.length - 1, Math.max(0, Math.round(index)));
 }

@@ -1,6 +1,27 @@
 // Pointer input: painting strokes and pattern stamping on the board.
 
 import { rotate } from './patterns.js';
+import { nearestZoomIndex } from './renderer.js';
+
+// One zoom level per 100 normalized pixels of wheel travel: a typical mouse
+// notch in every browser, or a short trackpad swipe.
+export const WHEEL_STEP = 100;
+const LINE_HEIGHT = 33;
+const PAGE_HEIGHT = 800;
+const WHEEL_IDLE_MS = 250;
+
+// Accumulates wheel deltas and returns whole zoom steps (+ is zoom in).
+export function wheelSteps(state, deltaY, deltaMode, time) {
+  const scale = deltaMode === 1 ? LINE_HEIGHT : deltaMode === 2 ? PAGE_HEIGHT : 1;
+  const delta = -deltaY * scale;
+  // Start over after a pause or when the direction flips.
+  if (time - state.time > WHEEL_IDLE_MS || Math.sign(delta) !== Math.sign(state.acc)) state.acc = 0;
+  state.time = time;
+  state.acc += delta;
+  const steps = Math.trunc(state.acc / WHEEL_STEP) || 0;
+  state.acc -= steps * WHEEL_STEP;
+  return steps;
+}
 
 // Integer cells on the line from (x0, y0) to (x1, y1), inclusive (Bresenham).
 export function line(x0, y0, x1, y1) {
@@ -36,15 +57,123 @@ export class Input {
     // { pattern, pointerId, cell } while a preset is waiting to be placed.
     this.stamp = null;
     this.onStampEnd = null;
+    // { pointerId, x, y } while right-, middle- or shift-dragging the view.
+    this.pan = null;
+    // Active touch points by pointerId -> { x, y }.
+    this.touches = new Map();
+    // { startDist, startCss, mid } during a two-finger pinch.
+    this.pinch = null;
+    // After a pinch, ignore the remaining finger until every touch lifts.
+    this.touchLocked = false;
+    this.wheel = { acc: 0, time: 0 };
 
-    canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
-    canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    canvas.addEventListener('pointerup', (e) => this.onPointerUp(e));
-    canvas.addEventListener('pointercancel', (e) => this.onPointerCancel(e));
+    canvas.addEventListener('pointerdown', (e) => this.handleDown(e));
+    canvas.addEventListener('pointermove', (e) => this.handleMove(e));
+    canvas.addEventListener('pointerup', (e) => this.handleUp(e, false));
+    canvas.addEventListener('pointercancel', (e) => this.handleUp(e, true));
     canvas.addEventListener('pointerleave', (e) => {
       this.renderer.setHover(null);
       if (this.stamp && e.pointerType !== 'touch') this.updateGhost(null);
     });
+    canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // --- Gesture routing -----------------------------------------------------
+
+  handleDown(e) {
+    if (e.pointerType === 'touch') {
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.touches.size === 2) {
+        this.startPinch();
+        return;
+      }
+      if (this.pinch || this.touchLocked) return;
+    }
+    const panButton = e.button === 1 || e.button === 2 || (e.button === 0 && e.shiftKey);
+    if (e.pointerType !== 'touch' && panButton && !this.stroke && !this.pan) {
+      e.preventDefault();
+      this.pan = { pointerId: e.pointerId, x: e.clientX, y: e.clientY };
+      this.canvas.setPointerCapture(e.pointerId);
+      this.canvas.classList.add('panning');
+      return;
+    }
+    this.onPointerDown(e);
+  }
+
+  handleMove(e) {
+    if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) {
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.pinch) {
+        this.updatePinch();
+        return;
+      }
+      if (this.touchLocked) return;
+    }
+    if (this.pan && e.pointerId === this.pan.pointerId) {
+      this.renderer.panBy(e.clientX - this.pan.x, e.clientY - this.pan.y);
+      this.pan.x = e.clientX;
+      this.pan.y = e.clientY;
+      return;
+    }
+    this.onPointerMove(e);
+  }
+
+  handleUp(e, cancelled) {
+    if (e.pointerType === 'touch') {
+      this.touches.delete(e.pointerId);
+      if (this.pinch || this.touchLocked) {
+        this.pinch = null;
+        this.touchLocked = this.touches.size > 0;
+        return;
+      }
+    }
+    if (this.pan && e.pointerId === this.pan.pointerId) {
+      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+      this.pan = null;
+      this.canvas.classList.remove('panning');
+      return;
+    }
+    if (cancelled) this.onPointerCancel(e);
+    else this.onPointerUp(e);
+  }
+
+  // --- Pinch ---------------------------------------------------------------
+
+  touchGeometry() {
+    const [a, b] = [...this.touches.values()];
+    return {
+      dist: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+      mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+    };
+  }
+
+  startPinch() {
+    // A pinch that begins mid-stroke must not leave a stray line behind.
+    if (this.stroke) this.revertStroke();
+    if (this.stamp && this.stamp.pointerId !== null) {
+      this.stamp.pointerId = null;
+      this.updateGhost(null);
+    }
+    const { dist, mid } = this.touchGeometry();
+    this.pinch = { startDist: dist, startCss: this.renderer.cellCss, mid };
+  }
+
+  updatePinch() {
+    const { dist, mid } = this.touchGeometry();
+    const p = this.pinch;
+    this.renderer.panBy(mid.x - p.mid.x, mid.y - p.mid.y);
+    p.mid = mid;
+    const target = nearestZoomIndex(p.startCss * (dist / p.startDist));
+    if (target !== this.renderer.zoomIndex) this.renderer.setZoom(target, mid.x, mid.y);
+  }
+
+  // --- Wheel ---------------------------------------------------------------
+
+  onWheel(e) {
+    e.preventDefault();
+    const steps = wheelSteps(this.wheel, e.deltaY, e.deltaMode, e.timeStamp);
+    if (steps) this.renderer.zoomBy(steps, e.clientX, e.clientY);
   }
 
   // --- Stamp mode ----------------------------------------------------------
