@@ -3,6 +3,45 @@
 export const DEFAULT_WIDTH = 256;
 export const DEFAULT_HEIGHT = 160;
 
+export const MIN_SPEED = 1;
+export const MAX_SPEED = 120;
+export const MAX_STEPS_PER_FRAME = 10;
+
+// Converts elapsed frame time into a whole number of generations to run.
+export class Clock {
+  constructor(speed = 10) {
+    this.speed = speed;
+    this.acc = 0;
+  }
+
+  set speed(value) {
+    this._speed = Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(value) || MIN_SPEED));
+  }
+
+  get speed() {
+    return this._speed;
+  }
+
+  reset() {
+    this.acc = 0;
+  }
+
+  // Elapsed milliseconds since the previous frame -> generations to step now.
+  advance(dt) {
+    const interval = 1000 / this._speed;
+    // Cap long gaps (e.g. returning to a background tab) so we never burst.
+    this.acc += Math.min(Math.max(dt, 0), 250);
+    let steps = Math.floor(this.acc / interval);
+    if (steps >= MAX_STEPS_PER_FRAME) {
+      steps = MAX_STEPS_PER_FRAME;
+      this.acc = 0;
+    } else {
+      this.acc -= steps * interval;
+    }
+    return steps;
+  }
+}
+
 export class Engine {
   constructor(width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
     if (!Number.isInteger(width) || !Number.isInteger(height) || width < 3 || height < 3) {

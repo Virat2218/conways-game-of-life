@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Engine, DEFAULT_WIDTH, DEFAULT_HEIGHT } from '../src/engine.js';
+import { Engine, Clock, MAX_STEPS_PER_FRAME, DEFAULT_WIDTH, DEFAULT_HEIGHT } from '../src/engine.js';
 
 function liveCells(engine) {
   const out = [];
@@ -145,4 +145,24 @@ test('version changes on every mutation', () => {
   assert.equal(e.version, v1, 'no-op set must not bump version');
   e.step();
   assert.ok(e.version > v1);
+});
+
+test('Clock converts frame time into generations at the set speed', () => {
+  const clock = new Clock(10);
+  assert.equal(clock.advance(50), 0);
+  assert.equal(clock.advance(50), 1, '100ms at 10 gen/s is one step');
+  let total = 0;
+  for (let i = 0; i < 60; i++) total += clock.advance(1000 / 60);
+  assert.equal(total, 10, 'one second at 10 gen/s');
+});
+
+test('Clock clamps speed to 1–120 and steps at most 10 per frame', () => {
+  const clock = new Clock(500);
+  assert.equal(clock.speed, 120);
+  clock.speed = 0;
+  assert.equal(clock.speed, 1);
+  clock.speed = 120;
+  assert.equal(clock.advance(1000), MAX_STEPS_PER_FRAME);
+  assert.equal(clock.acc, 0, 'backlog is dropped instead of bursting later');
+  assert.equal(clock.advance(-5), 0);
 });

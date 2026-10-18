@@ -9,8 +9,47 @@
     <script type="module" src="./src/main.js"></script>
   </head>
   <body>
-    <main class="app">
-      <canvas id="board" aria-label="Game of Life board"></canvas>
-    </main>
+    <div class="app">
+      <header class="toolbar" role="toolbar" aria-label="Simulation controls">
+        <h1 class="title">Game of Life</h1>
+
+        <div class="group">
+          <button type="button" class="btn" id="play" aria-pressed="false" aria-label="Play" title="Play (Space)">
+            <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            <svg class="icon icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+          </button>
+          <button type="button" class="btn" id="step" aria-label="Step one generation" title="Step (N or →)">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l9-7zM16 5h3v14h-3z" /></svg>
+          </button>
+        </div>
+
+        <label class="speed">
+          <span class="speed-label">Speed</span>
+          <input type="range" id="speed" min="1" max="120" step="1" value="10" />
+          <output id="speed-value" for="speed">10/s</output>
+        </label>
+
+        <div class="group">
+          <button type="button" class="btn" id="random" aria-label="Randomize" title="Randomize (25%)">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z" opacity=".35" /><path d="M5 5h5v5H5zM14 14h5v5h-5z" /></svg>
+          </button>
+          <button type="button" class="btn" id="clear" aria-label="Clear board" title="Clear (C)">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z" /></svg>
+          </button>
+          <button type="button" class="btn" id="fit" aria-label="Fit board to screen" title="Fit (F)">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4zM4 14h2v4h4v2H4zM18 14h2v6h-6v-2h4z" /></svg>
+          </button>
+        </div>
+
+        <dl class="stats">
+          <div><dt>Generation</dt><dd id="generation">0</dd></div>
+          <div><dt>Population</dt><dd id="population">0</dd></div>
+        </dl>
+      </header>
+
+      <main class="stage">
+        <canvas id="board" aria-label="Game of Life board"></canvas>
+      </main>
+    </div>
   </body>
 </html>

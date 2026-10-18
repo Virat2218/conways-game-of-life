@@ -1,3 +1,13 @@
+:root {
+  --bg: #f7f7f5;
+  --fg: #1c1c1c;
+  --muted: #5d5d58;
+  --surface: #ffffff;
+  --border: #d6d6d0;
+  --accent: #2f6fde;
+  --accent-fg: #ffffff;
+}
+
 *,
 *::before,
 *::after {
@@ -12,8 +22,9 @@ body {
 
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f7f7f5;
-  color: #1c1c1c;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .app {
@@ -22,11 +33,116 @@ body {
   height: 100%;
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.group {
+  display: flex;
+  gap: 4px;
+}
+
+.btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.btn .icon-pause,
+.btn[aria-pressed="true"] .icon-play {
+  display: none;
+}
+
+.btn[aria-pressed="true"] .icon-pause {
+  display: block;
+}
+
+.speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-label {
+  color: var(--muted);
+}
+
+.speed input {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+.speed output {
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 0 auto;
+}
+
+.stats div {
+  display: flex;
+  gap: 6px;
+}
+
+.stats dt {
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  min-width: 5ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
 #board {
   display: block;
-  flex: 1;
   width: 100%;
-  min-height: 0;
+  height: 100%;
   touch-action: none;
   cursor: crosshair;
 }
