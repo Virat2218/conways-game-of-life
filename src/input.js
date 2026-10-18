@@ -155,6 +155,16 @@ export class Input {
       this.stamp.pointerId = null;
       this.updateGhost(null);
     }
+    // Capture both fingers (revertStroke released the first) so their moves
+    // and lifts reach the canvas even off-board; otherwise a stale touch
+    // could leave touchLocked set for good.
+    for (const id of this.touches.keys()) {
+      try {
+        this.canvas.setPointerCapture(id);
+      } catch {
+        // The pointer already ended; its pointerup will clear it.
+      }
+    }
     const { dist, mid } = this.touchGeometry();
     this.pinch = { startDist: dist, startCss: this.renderer.cellCss, mid };
   }

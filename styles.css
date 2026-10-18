@@ -185,7 +185,8 @@ body {
 
 .toast {
   position: absolute;
-  left: 50%;
+  /* Centre within the safe area, which is lopsided when only one side has a notch. */
+  left: calc(50% + (env(safe-area-inset-left) - env(safe-area-inset-right)) / 2);
   bottom: calc(16px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
@@ -195,7 +196,7 @@ body {
   gap: 8px;
   /* left: 50% would otherwise cap the shrink-to-fit width at half the stage. */
   width: max-content;
-  max-width: calc(100% - 32px);
+  max-width: calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
