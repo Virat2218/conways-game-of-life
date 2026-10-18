@@ -30,12 +30,13 @@ export function visibleRange(offset, cellSize, viewportSize, cellCount) {
   return end > start ? [start, end] : [0, 0];
 }
 
-// Largest zoom level at which the whole grid fits in the viewport.
-export function fitZoomIndex(viewportCssWidth, viewportCssHeight, gridWidth, gridHeight) {
+// Largest zoom level at which the whole grid fits in the viewport. Sizes are
+// in device pixels and compared at the snapped cell size actually rendered.
+export function fitZoomIndex(viewportWidth, viewportHeight, gridWidth, gridHeight, dpr = 1) {
   let best = 0;
   for (let i = 0; i < ZOOM_LEVELS.length; i++) {
-    const z = ZOOM_LEVELS[i];
-    if (gridWidth * z <= viewportCssWidth && gridHeight * z <= viewportCssHeight) best = i;
+    const cs = deviceCellSize(ZOOM_LEVELS[i], dpr);
+    if (gridWidth * cs <= viewportWidth && gridHeight * cs <= viewportHeight) best = i;
   }
   return best;
 }
@@ -53,6 +54,14 @@ export function nearestZoomIndex(cellCss) {
     }
   }
   return best;
+}
+
+// New device-pixel offset that keeps the world point at the viewport centre
+// fixed across a DPR change. Snapped cell sizes don't scale linearly with
+// DPR, so scaling the offset alone would drift.
+export function rescaleOffset(offset, viewportCss, oldDpr, newDpr, oldCellSize, newCellSize) {
+  const anchor = ((viewportCss * oldDpr) / 2 - offset) / oldCellSize;
+  return (viewportCss * newDpr) / 2 - anchor * newCellSize;
 }
 
 export function clampZoomIndex(index) {
@@ -139,6 +148,9 @@ export class Renderer {
 
   observeSize() {
     const ro = new ResizeObserver((entries) => {
+      // A DPR change also resizes the device-pixel box; pick up the new ratio
+      // first so the size below is interpreted at the right scale.
+      this.syncDpr();
       const entry = entries[0];
       const box = entry.devicePixelContentBoxSize?.[0];
       const estW = entry.contentRect.width * this.dpr;
@@ -160,10 +172,7 @@ export class Renderer {
     query.addEventListener(
       'change',
       () => {
-        const ratio = (window.devicePixelRatio || 1) / this.dpr;
-        this.dpr = window.devicePixelRatio || 1;
-        this.offsetX *= ratio;
-        this.offsetY *= ratio;
+        this.syncDpr();
         const rect = this.canvas.getBoundingClientRect();
         this.resize(Math.round(rect.width * this.dpr), Math.round(rect.height * this.dpr));
         this.observeDpr();
@@ -172,18 +181,35 @@ export class Renderer {
     );
   }
 
+  // Rescales the device-pixel offsets when devicePixelRatio changes.
+  syncDpr() {
+    const dpr = window.devicePixelRatio || 1;
+    if (dpr === this.dpr) return;
+    const oldDpr = this.dpr;
+    const oldCs = this.cellSize;
+    this.dpr = dpr;
+    const newCs = this.cellSize;
+    const cssW = this.cssWidth ?? this.canvas.width / oldDpr;
+    const cssH = this.cssHeight ?? this.canvas.height / oldDpr;
+    this.offsetX = rescaleOffset(this.offsetX, cssW, oldDpr, dpr, oldCs, newCs);
+    this.offsetY = rescaleOffset(this.offsetY, cssH, oldDpr, dpr, oldCs, newCs);
+    this.viewChanged();
+  }
+
   resize(width, height) {
     if (width === this.canvas.width && height === this.canvas.height) return;
-    const hadSize = this.canvas.width > 0 && this.canvas.height > 0;
-    // Keep the board centre where it was across resizes.
-    const dx = (width - this.canvas.width) / 2;
-    const dy = (height - this.canvas.height) / 2;
+    const cssWidth = width / this.dpr;
+    const cssHeight = height / this.dpr;
+    // Keep the board centre where it was when the CSS size changes. A
+    // DPR-only change leaves the CSS size alone, so it shifts nothing.
+    if (this.cssWidth !== undefined) {
+      this.offsetX += ((cssWidth - this.cssWidth) / 2) * this.dpr;
+      this.offsetY += ((cssHeight - this.cssHeight) / 2) * this.dpr;
+    }
+    this.cssWidth = cssWidth;
+    this.cssHeight = cssHeight;
     this.canvas.width = width;
     this.canvas.height = height;
-    if (hadSize) {
-      this.offsetX += dx;
-      this.offsetY += dy;
-    }
     this.viewChanged();
   }
 
@@ -248,9 +274,13 @@ export class Renderer {
   }
 
   fit() {
-    const cssW = this.canvas.width / this.dpr;
-    const cssH = this.canvas.height / this.dpr;
-    this.zoomIndex = fitZoomIndex(cssW, cssH, this.engine.width, this.engine.height);
+    this.zoomIndex = fitZoomIndex(
+      this.canvas.width,
+      this.canvas.height,
+      this.engine.width,
+      this.engine.height,
+      this.dpr,
+    );
     this.center();
   }
 

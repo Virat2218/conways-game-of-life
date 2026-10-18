@@ -7,6 +7,7 @@ import {
   fitZoomIndex,
   clampZoomIndex,
   nearestZoomIndex,
+  rescaleOffset,
 } from '../src/renderer.js';
 
 test('zoom levels match the spec', () => {
@@ -51,4 +52,36 @@ test('nearestZoomIndex snaps continuous sizes to the closest level', () => {
   assert.equal(ZOOM_LEVELS[nearestZoomIndex(9.2)], 10);
   assert.equal(ZOOM_LEVELS[nearestZoomIndex(0.2)], 1);
   assert.equal(ZOOM_LEVELS[nearestZoomIndex(500)], 48);
+});
+
+test('fitZoomIndex compares the snapped device-pixel board at fractional DPRs', () => {
+  // 1280×800 CSS @1.5x: 5 CSS px snaps to 8 device px (2048 > 1920), so 4 must win.
+  assert.equal(ZOOM_LEVELS[fitZoomIndex(1920, 1200, 256, 160, 1.5)], 4);
+  for (const dpr of [1, 1.25, 1.5, 2, 2.625, 3]) {
+    for (const [cssW, cssH] of [[1280, 800], [390, 844], [1920, 1080], [360, 640]]) {
+      const w = Math.round(cssW * dpr);
+      const h = Math.round(cssH * dpr);
+      const i = fitZoomIndex(w, h, 256, 160, dpr);
+      const cs = deviceCellSize(ZOOM_LEVELS[i], dpr);
+      if (i > 0) assert.ok(256 * cs <= w && 160 * cs <= h, `${cssW}×${cssH}@${dpr} fits`);
+      if (i < ZOOM_LEVELS.length - 1) {
+        const next = deviceCellSize(ZOOM_LEVELS[i + 1], dpr);
+        assert.ok(256 * next > w || 160 * next > h, `${cssW}×${cssH}@${dpr} is the largest fit`);
+      }
+    }
+  }
+});
+
+test('rescaleOffset keeps the centred world point fixed when snapping is non-linear', () => {
+  // Zoom 3 CSS px: 4 device px @1.25x, 5 device px @1.5x (ratio 1.25, not 1.2).
+  const cssW = 1000;
+  const oldCs = deviceCellSize(3, 1.25);
+  const newCs = deviceCellSize(3, 1.5);
+  const centred = (cssW * 1.25 - 256 * oldCs) / 2;
+  const next = rescaleOffset(centred, cssW, 1.25, 1.5, oldCs, newCs);
+  const boardCentreCss = (next + 128 * newCs) / 1.5;
+  assert.ok(Math.abs(boardCentreCss - cssW / 2) < 1e-9, `board centre at ${boardCentreCss}`);
+  // Naive scaling drifts by ~17 CSS px.
+  const naive = ((centred * 1.2) + 128 * newCs) / 1.5;
+  assert.ok(Math.abs(naive - cssW / 2) > 10);
 });
