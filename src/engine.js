@@ -15,7 +15,11 @@ export class Clock {
   }
 
   set speed(value) {
-    this._speed = Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(value) || MIN_SPEED));
+    const next = Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.round(value) || MIN_SPEED));
+    // Keep progress toward the next generation as a fraction of the interval,
+    // so time banked at a slow speed doesn't turn into a burst at a fast one.
+    if (this._speed && this.acc) this.acc *= this._speed / next;
+    this._speed = next;
   }
 
   get speed() {

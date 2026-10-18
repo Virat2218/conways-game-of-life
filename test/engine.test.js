@@ -166,3 +166,13 @@ test('Clock clamps speed to 1–120 and steps at most 10 per frame', () => {
   assert.equal(clock.acc, 0, 'backlog is dropped instead of bursting later');
   assert.equal(clock.advance(-5), 0);
 });
+
+test('Clock keeps fractional progress when the speed changes', () => {
+  const clock = new Clock(1);
+  for (let i = 0; i < 4; i++) assert.equal(clock.advance(225), 0);
+  // 900ms banked: 90% of the way to the next generation.
+  clock.speed = 120;
+  assert.equal(clock.advance(0), 0, 'no burst from time banked at the slow speed');
+  assert.ok(Math.abs(clock.acc - 7.5) < 1e-9, 'still 90% of the new 8.33ms interval');
+  assert.equal(clock.advance(1), 1);
+});

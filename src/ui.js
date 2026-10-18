@@ -115,6 +115,13 @@ export class UI {
   onKeyDown(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (FORM_TAGS.has(e.target?.tagName) && e.key !== 'Escape') return;
+    // A focused button handles its own Space/Enter activation.
+    if (e.target?.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+    // Holding Space must toggle once, not on every auto-repeat.
+    if (e.key === ' ' && e.repeat) {
+      e.preventDefault();
+      return;
+    }
     const a = this.actions;
     switch (e.key) {
       case ' ':
