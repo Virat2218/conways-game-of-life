@@ -2,6 +2,7 @@ import { Engine, Clock } from './engine.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
 import { UI } from './ui.js';
+import { getPreset } from './patterns.js';
 
 const canvas = document.getElementById('board');
 const engine = new Engine();
@@ -31,13 +32,23 @@ const ui = new UI(document, {
   zoomIn: () => renderer.zoomBy(1),
   zoomOut: () => renderer.zoomBy(-1),
   escape: () => {
-    if (input.stroke) input.revertStroke();
+    if (input.stamp) input.cancelStamp();
+    else if (input.stroke) input.revertStroke();
     else setRunning(false);
   },
   setSpeed: (value) => {
     clock.speed = value;
   },
+  choosePattern: (id) => {
+    const preset = getPreset(id);
+    if (!preset) return;
+    input.setStamp(preset);
+    ui.showStamp(preset.name);
+  },
+  rotate: () => input.rotateStamp(),
 });
+
+input.onStampEnd = () => ui.hideStamp();
 
 engine.randomize(0.25);
 

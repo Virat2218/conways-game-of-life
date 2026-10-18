@@ -1,9 +1,12 @@
-// Toolbar, stats and keyboard shortcuts. Translates DOM events into actions.
+// Toolbar, stats, stamp toast and keyboard shortcuts. Translates DOM events into actions.
+
+import { PRESETS } from './patterns.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
 export class UI {
-  // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape, setSpeed }
+  // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
+  //            setSpeed, choosePattern, rotate }
   constructor(root, actions) {
     this.actions = actions;
     this.el = {
@@ -16,6 +19,11 @@ export class UI {
       speedValue: root.getElementById('speed-value'),
       generation: root.getElementById('generation'),
       population: root.getElementById('population'),
+      pattern: root.getElementById('pattern'),
+      toast: root.getElementById('toast'),
+      toastText: root.getElementById('toast-text'),
+      toastRotate: root.getElementById('toast-rotate'),
+      toastCancel: root.getElementById('toast-cancel'),
     };
     this.shown = { generation: -1, population: -1, running: null };
 
@@ -31,7 +39,34 @@ export class UI {
       actions.setSpeed(value);
     });
 
+    for (const p of PRESETS) {
+      const option = root.createElement('option');
+      option.value = p.id;
+      option.textContent = p.name;
+      this.el.pattern.append(option);
+    }
+    this.el.pattern.addEventListener('change', () => {
+      const id = this.el.pattern.value;
+      if (!id) return;
+      actions.choosePattern(id);
+      // Reset so the same preset can be picked again, and release focus so
+      // R and Esc reach the shortcuts instead of the select's type-ahead.
+      this.el.pattern.value = '';
+      this.el.pattern.blur();
+    });
+    this.bindButton(this.el.toastRotate, actions.rotate);
+    this.bindButton(this.el.toastCancel, actions.escape);
+
     root.addEventListener('keydown', (e) => this.onKeyDown(e));
+  }
+
+  showStamp(name) {
+    this.el.toastText.textContent = `Placing ${name} — click or drag and release to place.`;
+    this.el.toast.hidden = false;
+  }
+
+  hideStamp() {
+    this.el.toast.hidden = true;
   }
 
   bindButton(button, action) {
@@ -71,6 +106,10 @@ export class UI {
       case 'f':
       case 'F':
         a.fit();
+        break;
+      case 'r':
+      case 'R':
+        a.rotate();
         break;
       case 'Escape':
         a.escape();

@@ -41,6 +41,13 @@
           </button>
         </div>
 
+        <label class="pattern">
+          <span class="visually-hidden">Place a pattern</span>
+          <select id="pattern">
+            <option value="">Patterns…</option>
+          </select>
+        </label>
+
         <dl class="stats">
           <div><dt>Generation</dt><dd id="generation">0</dd></div>
           <div><dt>Population</dt><dd id="population">0</dd></div>
@@ -49,6 +56,11 @@
 
       <main class="stage">
         <canvas id="board" aria-label="Game of Life board"></canvas>
+        <div class="toast" id="toast" role="status" hidden>
+          <span id="toast-text"></span>
+          <button type="button" class="toast-btn" id="toast-rotate">Rotate <kbd>R</kbd></button>
+          <button type="button" class="toast-btn" id="toast-cancel">Cancel <kbd>Esc</kbd></button>
+        </div>
       </main>
     </div>
   </body>

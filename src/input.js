@@ -1,4 +1,6 @@
-// Pointer input: painting strokes on the board.
+// Pointer input: painting strokes and pattern stamping on the board.
+
+import { rotate } from './patterns.js';
 
 // Integer cells on the line from (x0, y0) to (x1, y1), inclusive (Bresenham).
 export function line(x0, y0, x1, y1) {
@@ -31,13 +33,95 @@ export class Input {
     this.renderer = renderer;
     this.engine = engine;
     this.stroke = null;
+    // { pattern, pointerId, cell } while a preset is waiting to be placed.
+    this.stamp = null;
+    this.onStampEnd = null;
 
     canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
     canvas.addEventListener('pointerup', (e) => this.onPointerUp(e));
-    canvas.addEventListener('pointercancel', (e) => this.onPointerUp(e));
-    canvas.addEventListener('pointerleave', () => this.renderer.setHover(null));
+    canvas.addEventListener('pointercancel', (e) => this.onPointerCancel(e));
+    canvas.addEventListener('pointerleave', (e) => {
+      this.renderer.setHover(null);
+      if (this.stamp && e.pointerType !== 'touch') this.updateGhost(null);
+    });
   }
+
+  // --- Stamp mode ----------------------------------------------------------
+
+  setStamp(pattern) {
+    if (this.stroke) this.revertStroke();
+    this.stamp = pattern ? { pattern, pointerId: null, cell: null } : null;
+    this.renderer.setHover(null);
+    // The ghost appears once the pointer is over the board.
+    this.renderer.setGhost(null);
+  }
+
+  rotateStamp() {
+    if (!this.stamp) return;
+    this.stamp.pattern = rotate(this.stamp.pattern);
+    this.updateGhost(this.stamp.cell);
+  }
+
+  cancelStamp() {
+    if (!this.stamp) return;
+    this.endStamp('cancelled');
+  }
+
+  endStamp(reason) {
+    const { pointerId } = this.stamp;
+    if (pointerId !== null && this.canvas.hasPointerCapture(pointerId)) {
+      this.canvas.releasePointerCapture(pointerId);
+    }
+    this.stamp = null;
+    this.renderer.setGhost(null);
+    this.onStampEnd?.(reason);
+  }
+
+  // Top-left cell that centres the stamp on `cell`.
+  stampOrigin(cell) {
+    const { width, height } = this.stamp.pattern;
+    return { x: cell.x - Math.floor(width / 2), y: cell.y - Math.floor(height / 2) };
+  }
+
+  updateGhost(cell) {
+    if (!this.stamp) return;
+    const inside = cell && this.inBounds(cell.x, cell.y);
+    this.stamp.cell = inside ? cell : null;
+    if (!inside) {
+      this.renderer.setGhost(null);
+      return;
+    }
+    const o = this.stampOrigin(cell);
+    this.renderer.setGhost(this.stamp.pattern.cells.map(([x, y]) => [x + o.x, y + o.y]));
+  }
+
+  placeStamp() {
+    const { cell, pattern } = this.stamp;
+    if (!cell) {
+      this.endStamp('cancelled');
+      return;
+    }
+    const o = this.stampOrigin(cell);
+    // Engine.set wraps, so stamps near an edge continue on the opposite side.
+    for (const [x, y] of pattern.cells) this.engine.set(x + o.x, y + o.y, 1);
+    this.endStamp('placed');
+  }
+
+  onStampPointerDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    this.updateGhost(this.cellAt(e.clientX, e.clientY));
+    if (e.pointerType === 'touch') {
+      // Touch: drag to position the ghost, release to place.
+      this.stamp.pointerId = e.pointerId;
+      this.canvas.setPointerCapture(e.pointerId);
+    } else {
+      this.placeStamp();
+    }
+  }
+
+  // --- Painting ------------------------------------------------------------
 
   // Unclamped integer cell under a client position.
   cellAt(clientX, clientY) {
@@ -50,6 +134,10 @@ export class Input {
   }
 
   onPointerDown(e) {
+    if (this.stamp) {
+      this.onStampPointerDown(e);
+      return;
+    }
     if (e.button !== 0 || this.stroke) return;
     const cell = this.renderer.screenToCell(e.clientX, e.clientY);
     if (!cell) return;
@@ -67,6 +155,13 @@ export class Input {
   }
 
   onPointerMove(e) {
+    if (this.stamp) {
+      const dragging = this.stamp.pointerId !== null;
+      if (dragging ? e.pointerId === this.stamp.pointerId : e.pointerType !== 'touch') {
+        this.updateGhost(this.cellAt(e.clientX, e.clientY));
+      }
+      return;
+    }
     if (e.pointerType !== 'touch') this.updateHover(e);
     const stroke = this.stroke;
     if (!stroke || e.pointerId !== stroke.pointerId) return;
@@ -80,6 +175,25 @@ export class Input {
   }
 
   onPointerUp(e) {
+    if (this.stamp) {
+      if (e.pointerId === this.stamp.pointerId) this.placeStamp();
+      return;
+    }
+    this.endStroke(e);
+  }
+
+  onPointerCancel(e) {
+    if (this.stamp) {
+      if (e.pointerId === this.stamp.pointerId) {
+        this.stamp.pointerId = null;
+        this.updateGhost(null);
+      }
+      return;
+    }
+    this.endStroke(e);
+  }
+
+  endStroke(e) {
     if (!this.stroke || e.pointerId !== this.stroke.pointerId) return;
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
     this.stroke = null;
