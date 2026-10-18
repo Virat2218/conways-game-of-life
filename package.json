@@ -1,6 +1,6 @@
 {
   "name": "conways-game-of-life",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Conway's Game of Life in vanilla JavaScript with native ES modules.",
   "type": "module",
