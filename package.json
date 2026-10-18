@@ -1,0 +1,15 @@
+{
+  "name": "conways-game-of-life",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Conway's Game of Life in vanilla JavaScript with native ES modules.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8000"
+  }
+}
