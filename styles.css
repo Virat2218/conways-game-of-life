@@ -1,11 +1,46 @@
 :root {
+  color-scheme: light dark;
+
   --bg: #f7f7f5;
   --fg: #1c1c1c;
   --muted: #5d5d58;
   --surface: #ffffff;
-  --border: #d6d6d0;
+  --border: #8a8a83;
   --accent: #2f6fde;
   --accent-fg: #ffffff;
+  --focus: #2f6fde;
+  --shadow: rgba(0, 0, 0, 0.12);
+
+  /* Canvas colors, read by the renderer. */
+  --board-background: #e9e9e4;
+  --board: #ffffff;
+  --cell: #1c1c1c;
+  --grid-minor: rgba(0, 0, 0, 0.08);
+  --grid-major: rgba(0, 0, 0, 0.2);
+  --hover: #2f6fde;
+  --ghost: rgba(47, 111, 222, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111113;
+    --fg: #ececec;
+    --muted: #a6a6ab;
+    --surface: #1c1c1f;
+    --border: #707077;
+    --accent: #7aa2f7;
+    --accent-fg: #0b1220;
+    --focus: #7aa2f7;
+    --shadow: rgba(0, 0, 0, 0.5);
+
+    --board-background: #0b0b0c;
+    --board: #18181b;
+    --cell: #e8e8e8;
+    --grid-minor: rgba(255, 255, 255, 0.07);
+    --grid-major: rgba(255, 255, 255, 0.18);
+    --hover: #7aa2f7;
+    --ghost: rgba(122, 162, 247, 0.55);
+  }
 }
 
 *,
@@ -38,7 +73,8 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  padding: 8px 12px;
+  padding: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px
+    calc(12px + env(safe-area-inset-left));
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
@@ -69,6 +105,22 @@ body {
 
 .btn:hover {
   border-color: var(--muted);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.btn:focus-visible,
+.toast-btn:focus-visible,
+.pattern select:focus-visible {
+  outline-offset: 2px;
+  border-color: var(--focus);
+}
+
+#board:focus-visible {
+  outline-offset: -2px;
 }
 
 .btn[aria-pressed="true"] {
@@ -134,20 +186,22 @@ body {
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  /* left: 50% would otherwise cap the shrink-to-fit width at half the stage. */
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px var(--shadow);
 }
 
 .toast[hidden] {
@@ -207,4 +261,29 @@ kbd {
 
 #board.panning {
   cursor: grabbing;
+}
+
+@media (max-width: 560px) {
+  .toolbar {
+    gap: 8px;
+  }
+
+  .title {
+    flex-basis: 100%;
+  }
+
+  .speed {
+    flex: 1 1 160px;
+  }
+
+  .speed input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .stats {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }

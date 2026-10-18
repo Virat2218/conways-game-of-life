@@ -1,7 +1,7 @@
 import { Engine, Clock } from './engine.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
-import { UI } from './ui.js';
+import { UI, watchTheme } from './ui.js';
 import { getPreset } from './patterns.js';
 
 const canvas = document.getElementById('board');
@@ -49,6 +49,7 @@ const ui = new UI(document, {
 });
 
 input.onStampEnd = () => ui.hideStamp();
+watchTheme((colors) => renderer.setColors(colors));
 
 engine.randomize(0.25);
 

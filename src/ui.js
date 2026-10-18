@@ -4,6 +4,38 @@ import { PRESETS } from './patterns.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
+// Screen-reader announcements: rare while running, prompt-ish while paused.
+const ANNOUNCE_RUNNING_MS = 5000;
+const ANNOUNCE_PAUSED_MS = 1000;
+
+const THEME_VARS = {
+  background: '--board-background',
+  board: '--board',
+  cell: '--cell',
+  gridMinor: '--grid-minor',
+  gridMajor: '--grid-major',
+  hover: '--hover',
+  ghost: '--ghost',
+};
+
+// Reads the canvas palette from CSS custom properties.
+export function readThemeColors(element = document.documentElement) {
+  const style = getComputedStyle(element);
+  const colors = {};
+  for (const [key, name] of Object.entries(THEME_VARS)) {
+    const value = style.getPropertyValue(name).trim();
+    if (value) colors[key] = value;
+  }
+  return colors;
+}
+
+// Calls `fn` with fresh colors whenever the color scheme flips.
+export function watchTheme(fn) {
+  const query = window.matchMedia('(prefers-color-scheme: dark)');
+  query.addEventListener('change', () => fn(readThemeColors()));
+  fn(readThemeColors());
+}
+
 export class UI {
   // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
   //            setSpeed, choosePattern, rotate }
@@ -24,8 +56,10 @@ export class UI {
       toastText: root.getElementById('toast-text'),
       toastRotate: root.getElementById('toast-rotate'),
       toastCancel: root.getElementById('toast-cancel'),
+      announcer: root.getElementById('announcer'),
     };
     this.shown = { generation: -1, population: -1, running: null };
+    this.announced = { text: '', time: -Infinity };
 
     this.bindButton(this.el.play, actions.togglePlay);
     this.bindButton(this.el.step, actions.step);
@@ -136,5 +170,16 @@ export class UI {
       shown.population = population;
       el.population.textContent = population.toLocaleString();
     }
+    this.announce(running, generation, population);
+  }
+
+  announce(running, generation, population) {
+    const now = performance.now();
+    const wait = running ? ANNOUNCE_RUNNING_MS : ANNOUNCE_PAUSED_MS;
+    if (now - this.announced.time < wait) return;
+    const text = `${running ? 'Running' : 'Paused'}. Generation ${generation.toLocaleString()}, population ${population.toLocaleString()}.`;
+    if (text === this.announced.text) return;
+    this.announced = { text, time: now };
+    this.el.announcer.textContent = text;
   }
 }
