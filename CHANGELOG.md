@@ -17,7 +17,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Eight pattern presets with plaintext/RLE parsing, rotation, ghost-preview stamping and touch placement ([#15](https://github.com/adisakshya/conways-game-of-life/pull/15)).
 - Wheel/trackpad zoom around the cursor, drag panning, fit-to-screen and two-finger pinch ([#16](https://github.com/adisakshya/conways-game-of-life/pull/16)).
 - Light/dark theming via CSS custom properties, focus rings, screen-reader stats, safe-area insets and a toolbar that wraps down to 360 px ([#17](https://github.com/adisakshya/conways-game-of-life/pull/17)).
-- README, changelog and screenshot.
+- README, changelog and screenshot ([#18](https://github.com/adisakshya/conways-game-of-life/pull/18)).
+
+### Fixed
+
+- Fit no longer clips the board at fractional pixel ratios, and moving between displays keeps the view centred ([#22](https://github.com/adisakshya/conways-game-of-life/pull/22)).
+- Holding Space toggles playback once; Space and Enter activate a focused button; speed changes no longer burst generations ([#23](https://github.com/adisakshya/conways-game-of-life/pull/23)).
+- A pinch can no longer lock out one-finger drawing; the stamp toast stays inside horizontal safe areas ([#24](https://github.com/adisakshya/conways-game-of-life/pull/24)).
 
 [Unreleased]: https://github.com/adisakshya/conways-game-of-life/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/adisakshya/conways-game-of-life/releases/tag/v1.0.0
