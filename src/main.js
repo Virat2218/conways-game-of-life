@@ -1,9 +1,11 @@
 import { Engine } from './engine.js';
 import { Renderer } from './renderer.js';
+import { Input } from './input.js';
 
 const canvas = document.getElementById('board');
 const engine = new Engine();
 const renderer = new Renderer(canvas, engine);
+new Input(canvas, renderer, engine);
 
 engine.randomize(0.25);
 
