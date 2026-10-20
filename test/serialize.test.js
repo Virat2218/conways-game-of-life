@@ -183,3 +183,13 @@ test('damaged, hostile or oversized link payloads are rejected, never partly app
   bad('#pattern=v1.' + btoa('ÿþ').replace(/=+$/, ''));
   assert.equal(bad('#pattern=v1.' + btoa('x = 3, y = 3, rule = B36/S23\nbo!').replace(/=+$/, '')).code, 'rule');
 });
+
+test('a truncated link payload is rejected rather than half-loaded', () => {
+  const url = encodeLink(getPreset('gosper'), '').url;
+  const payload = url.slice(url.indexOf('.') + 1);
+  for (const cut of [payload.length - 1, payload.length - 4, Math.floor(payload.length / 2), 8]) {
+    const result = decodeLink(`#pattern=v1.${payload.slice(0, cut)}`);
+    assert.equal(result.ok, false, `cut at ${cut}`);
+  }
+  assert.equal(decodeLink(`#pattern=v1.${payload}`).ok, true);
+});

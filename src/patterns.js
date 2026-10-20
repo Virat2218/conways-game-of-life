@@ -180,6 +180,7 @@ export function parseRLE(text, limits = LIMITS) {
   let x = 0;
   let y = 0;
   let count = '';
+  let terminated = false;
   for (const ch of bodyLines.join('')) {
     if (ch >= '0' && ch <= '9') {
       // A run can never be longer than the board, so long digit strings are refused early.
@@ -200,11 +201,14 @@ export function parseRLE(text, limits = LIMITS) {
       y += n;
       x = 0;
     } else if (ch === '!') {
+      terminated = true;
       break;
     } else if (!/\s/.test(ch)) {
       throw new ParseError(`Unexpected '${ch}' in RLE.`, 'syntax');
     }
   }
+  // Without the closing '!' (or with a count left dangling) the text was probably cut off.
+  if (!terminated) throw new ParseError("The RLE ends before its closing '!', so it may be cut off.", 'syntax');
   return normalize(cells);
 }
 

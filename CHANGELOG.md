@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 
 - Rotating a pattern before placing it dropped its name, so the undo step was labelled "Place undefined".
+- A keyboard **Stamp onto board** from the import dialog no longer loses focus to the Share button; loading a saved setup that differs from the board only in its Restart seed is now an undoable step; RLE text that ends before its `!` is refused instead of loading a partial pattern.
 - On phones the board was squeezed to roughly 120 px tall between the toolbar and the notes; it now has a height of its own (about 44% of the viewport, at least 260 px).
 
 ## [1.0.0] - 2026-10-18

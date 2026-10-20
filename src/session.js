@@ -10,6 +10,13 @@
 
 import { History } from './history.js';
 
+const sameSeed = (a, b) => {
+  if (!a || !b) return a === b;
+  if (a.cells.length !== b.cells.length) return false;
+  for (let i = 0; i < a.cells.length; i++) if (a.cells[i] !== b.cells[i]) return false;
+  return true;
+};
+
 export class Session {
   // `isEditing()`  – a stroke is in progress or a pattern is waiting to be placed.
   // `isStroking()` – a stroke is in progress (its undo record must stay valid).
@@ -124,15 +131,16 @@ export class Session {
   commitTransaction(label, { establishSeed = false, seed } = {}) {
     const before = this.pending;
     this.pending = null;
-    if (!before || this.engine.matches(before)) {
-      if (before && seed !== undefined) this.seed = seed;
-      else if (before && establishSeed) this.captureSeed();
-      return false;
-    }
+    if (!before) return false;
+    const unchanged = this.engine.matches(before);
+    // An edit that nets out to nothing leaves the seed and the history alone.
+    if (unchanged && seed === undefined && !establishSeed) return false;
     // Edited boards need a fresh seed at the next Play/Step.
-    this.seed = null;
+    if (!unchanged) this.seed = null;
     if (seed !== undefined) this.seed = seed;
-    else if (establishSeed) this.captureSeed();
+    else if (establishSeed) this.seed = { cells: this.engine.cells.slice() };
+    // The same cells under a different seed are still a change: Undo must undo it.
+    if (unchanged && sameSeed(before.seed, this.seed)) return false;
     this.history.push({ label, before, after: this.capture() });
     return true;
   }

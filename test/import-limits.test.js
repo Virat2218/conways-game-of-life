@@ -70,3 +70,12 @@ test('plaintext and RLE are told apart reliably, comments included', () => {
   assert.deepEqual(parse('.O.\r\n..O\r\nOOO\r\n').cells, glider, 'CRLF plaintext');
   assert.deepEqual(parse('').cells, [], 'nothing at all is an empty pattern (importers reject it)');
 });
+
+test('RLE that ends before its terminator is refused, never loaded as a partial pattern', () => {
+  for (const text of ['x = 3, y = 2\n3o$2', 'x = 3, y = 3\nbo$2bo$3o', '3o$', '3o$2', '12', 'bo$2bo$3', 'x = 3, y = 3, rule = B3/S23\n']) {
+    assert.equal(code(() => parseRLE(text)), 'syntax', JSON.stringify(text));
+    if (!/^x = 3, y = 3, rule = B3\/S23\n$/.test(text)) assert.equal(code(() => parse(text)), 'syntax', `parse: ${JSON.stringify(text)}`);
+  }
+  assert.deepEqual(parseRLE('3o!').cells, [[0, 0], [1, 0], [2, 0]]);
+  assert.deepEqual(parseRLE('x = 3, y = 3\nbo$2bo$3o!\nignored after the terminator').cells, getPreset('glider').cells);
+});

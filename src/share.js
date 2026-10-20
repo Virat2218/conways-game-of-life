@@ -52,7 +52,12 @@ export class ShareDialog {
     el.dialog.addEventListener('click', (e) => {
       if (e.target === el.dialog) el.dialog.close();
     });
-    el.dialog.addEventListener('close', () => el.open.focus());
+    // Focus goes back to the button that opened the dialog, unless the dialog was
+    // closed to start a keyboard placement, which has already moved focus to the board.
+    el.dialog.addEventListener('close', () => {
+      if (this.keepFocus) this.keepFocus = false;
+      else el.open.focus();
+    });
 
     el.save.addEventListener('click', () => {
       this.report(actions.save());
@@ -182,6 +187,7 @@ export class ShareDialog {
   finish(mode, keyboard = false) {
     const { pattern, name } = this.pending;
     this.pending = null;
+    this.keepFocus = mode === 'stamp' && keyboard;
     this.el.dialog.close();
     if (mode === 'load') this.actions.loadImport(pattern, name);
     else this.actions.stampImport(pattern, name, { keyboard });
