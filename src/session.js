@@ -119,16 +119,20 @@ export class Session {
 
   // `establishSeed` makes the new board the restart seed straight away (for a
   // replaced board, as opposed to an edit that the next Play/Step will adopt).
-  commitTransaction(label, { establishSeed = false } = {}) {
+  // `seed` (an object or null) sets the restart seed outright, for a board that
+  // arrives together with its own (a saved setup).
+  commitTransaction(label, { establishSeed = false, seed } = {}) {
     const before = this.pending;
     this.pending = null;
     if (!before || this.engine.matches(before)) {
-      if (before && establishSeed) this.captureSeed();
+      if (before && seed !== undefined) this.seed = seed;
+      else if (before && establishSeed) this.captureSeed();
       return false;
     }
     // Edited boards need a fresh seed at the next Play/Step.
     this.seed = null;
-    if (establishSeed) this.captureSeed();
+    if (seed !== undefined) this.seed = seed;
+    else if (establishSeed) this.captureSeed();
     this.history.push({ label, before, after: this.capture() });
     return true;
   }
@@ -153,6 +157,17 @@ export class Session {
     this.engine.clear();
     change();
     this.commitTransaction(label, { establishSeed: true });
+    return true;
+  }
+
+  // Puts a complete saved state (cells, generation and restart seed) on the board,
+  // paused, as one undo step. Ignored while a stroke is in progress.
+  loadState(label, { cells, generation, seed }) {
+    if (this.isStroking()) return false;
+    this.pause();
+    this.beginTransaction();
+    this.engine.restore({ cells, generation });
+    this.commitTransaction(label, { seed });
     return true;
   }
 
