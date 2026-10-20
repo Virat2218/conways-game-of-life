@@ -36,6 +36,10 @@
       <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8" /><path d="M12 2.8v2.2M12 19v2.2M2.8 12H5M19 12h2.2M5.5 5.5 7 7M17 17l1.5 1.5M18.5 5.5 17 7M7 17l-1.5 1.5" /></symbol>
       <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8 8 0 0 1 9.4 4 8 8 0 1 0 20 14.6z" /></symbol>
       <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2" /><path d="M9 20h6M12 16.5V20" /></symbol>
+      <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1.2-4.3L16.4 4.5a2.1 2.1 0 0 1 3 3L8.2 18.8z" /><path d="M14.3 6.6l3.1 3.1" /></symbol>
+      <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M4.6 14.6l8-8a2.1 2.1 0 0 1 3 0l3.8 3.8a2.1 2.1 0 0 1 0 3l-6.6 6.6H8.2L4.6 16.4a1.3 1.3 0 0 1 0-1.8z" /><path d="M9.8 9.4l6.2 6.2M10 20h9.5" /></symbol>
+      <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-2.8 2.8M12 3l2.8 2.8M12 21l-2.8-2.8M12 21l2.8-2.8M3 12l2.8-2.8M3 12l2.8 2.8M21 12l-2.8-2.8M21 12l-2.8 2.8" /></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.1.9-1.1 1.7M12 16.9v.1" /></symbol>
       <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15" /></symbol>
     </svg>
 
@@ -72,10 +76,31 @@
 
       <main class="workspace">
         <section class="board-panel" aria-label="Board">
-          <div class="board-toolbar" role="toolbar" aria-label="Board view">
+          <div class="board-toolbar" role="group" aria-label="Board tools">
+            <fieldset class="tool-group" id="tool-group">
+              <legend class="visually-hidden">Tool</legend>
+              <label class="tool-option">
+                <input type="radio" name="tool" value="draw" checked />
+                <span class="tool-face"><svg class="icon" aria-hidden="true"><use href="#i-pencil" /></svg><span>Draw</span></span>
+              </label>
+              <label class="tool-option">
+                <input type="radio" name="tool" value="erase" />
+                <span class="tool-face"><svg class="icon" aria-hidden="true"><use href="#i-eraser" /></svg><span>Erase</span></span>
+              </label>
+              <label class="tool-option">
+                <input type="radio" name="tool" value="pan" />
+                <span class="tool-face"><svg class="icon" aria-hidden="true"><use href="#i-move" /></svg><span>Pan</span></span>
+              </label>
+            </fieldset>
+            <p class="tool-label" id="tool-label">Draw cells</p>
+            <span class="toolbar-spacer"></span>
             <button type="button" class="btn" id="fit" title="Fit board to screen (F)">
               <svg class="icon" aria-hidden="true"><use href="#i-fit" /></svg>
               <span>Fit board</span>
+            </button>
+            <button type="button" class="btn" id="help-open" aria-haspopup="dialog" title="How to use the board">
+              <svg class="icon" aria-hidden="true"><use href="#i-help" /></svg>
+              <span>Help</span>
             </button>
           </div>
           <div class="stage">
@@ -88,8 +113,9 @@
           </div>
           <div class="board-footer">
             <p class="hint">
-              <span class="hint-fine">Drag to paint (start on a live cell to erase) · Right-drag to pan · Scroll to zoom</span>
-              <span class="hint-coarse">Drag to paint · Pinch to zoom · Two fingers to pan</span>
+              <span id="hint-tool">Draw: drag to add cells.</span>
+              <span class="hint-fine">Right-drag or Shift-drag to pan · Scroll to zoom</span>
+              <span class="hint-coarse">Pinch to zoom · Two fingers to pan</span>
             </p>
             <p class="kbd-hint"><kbd>Space</kbd> Play / pause</p>
           </div>
@@ -153,5 +179,48 @@
         <span>B3 / S23</span>
       </footer>
     </div>
+
+    <dialog class="help" id="help" aria-labelledby="help-title">
+      <div class="help-head">
+        <h2 id="help-title">How to use the board</h2>
+        <button type="button" class="btn" id="help-close" autofocus>Close</button>
+      </div>
+      <div class="help-body">
+        <section>
+          <h3>Edit cells</h3>
+          <ul>
+            <li><strong>Draw</strong> adds the cells you drag across; <strong>Erase</strong> removes them. They work the same wherever the stroke starts.</li>
+            <li><strong>Pan</strong> moves the view and never changes a cell.</li>
+            <li>Editing pauses a running simulation and leaves it paused; press Play to continue. <kbd>Esc</kbd> reverts the stroke you are making.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Place a pattern</h3>
+          <ul>
+            <li>Choose one in the Pattern library, then click the board. On a touch screen, drag to position it and release to place it.</li>
+            <li><kbd>R</kbd> rotates it and <kbd>Esc</kbd> cancels. You return to the tool you had selected.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Move around</h3>
+          <ul>
+            <li>Zoom with the mouse wheel or trackpad, <kbd>+</kbd> / <kbd>−</kbd>, or by pinching.</li>
+            <li>Pan with the Pan tool, a right-, middle- or <kbd>Shift</kbd>-drag, or two fingers.</li>
+            <li><kbd>F</kbd> fits the whole board in view.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Playback</h3>
+          <ul>
+            <li><kbd>Space</kbd> plays or pauses, <kbd>N</kbd> or <kbd>→</kbd> steps one generation, <kbd>C</kbd> clears the board.</li>
+            <li>Randomize fills the board about a quarter full and restarts the generation count.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>The board</h3>
+          <p>The board is <span data-board-size>256 × 160</span> cells and its edges wrap: a pattern that leaves one side comes back on the opposite side.</p>
+        </section>
+      </div>
+    </dialog>
   </body>
 </html>

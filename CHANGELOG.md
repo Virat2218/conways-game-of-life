@@ -9,6 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Redesigned the interface as a canvas-and-sidebar workspace with a Simulation card, a Pattern library and the rules, stacking on phones with Play and Step pinned to the bottom edge.
 - Painting, erasing and arming a pattern now pause a running simulation before the board changes, and leave it paused. Play and Step are unavailable (and say why) until the stroke or placement ends. Esc reverts a stroke to its exact earlier state. Randomize pauses and resets the generation to 0.
+- Added explicit Draw, Erase and Pan tools. Draw always adds cells and Erase always removes them, wherever a stroke starts (the old rule of "start on a live cell to erase" is gone). Pan moves the view with a mouse, pen or finger and never changes a cell. Right-, middle- and Shift-drag still pan under every tool.
+- Added a Help dialog describing the real controls, shortcuts and the wrapping board.
 - Added a Light / Dark / System theme switch. The choice is saved in the browser; System follows the OS. The page and the board both re-theme immediately, even while paused.
 
 ## [1.0.0] - 2026-10-18

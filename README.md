@@ -12,7 +12,8 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 
 - 256×160 toroidal board (edges wrap) running B3/S23 at 1–120 generations per second
 - Pixel-perfect rendering at any `devicePixelRatio`, with 1-device-pixel gridlines
-- Gap-free painting with mouse, pen or touch; strokes that start on a live cell erase
+- Draw, Erase and Pan tools that work the same with mouse, pen and touch, and gap-free strokes at any zoom
+- A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
 - Eight classic presets with a ghost preview, rotation and touch placement
 - Wheel, trackpad and pinch zoom; drag panning; fit-to-screen
 - A canvas-and-sidebar workspace that stacks on phones, with Play and Step pinned to the bottom edge
@@ -25,15 +26,18 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | --- | --- | --- |
 | Play / pause | Play button (unavailable while a stroke or pattern placement is in progress) | <kbd>Space</kbd> |
 | Step one generation | Step button | <kbd>N</kbd> or <kbd>→</kbd> |
-| Draw / erase | Drag on the board (starting on a live cell erases). Editing pauses a running simulation and leaves it paused; press Play to resume. | — |
+| Draw cells | **Draw** tool (the default): drag to add cells, wherever the stroke starts. Editing pauses a running simulation and leaves it paused; press Play to resume. | — |
+| Erase cells | **Erase** tool: drag to remove cells, wherever the stroke starts | — |
+| Pan the view | **Pan** tool: drag with a mouse, pen or one finger. Cells are never changed. | Arrow keys in the tool group switch tools |
+| Help | **Help** button (also dismissed with <kbd>Esc</kbd> or Close; focus returns to the button) | <kbd>Enter</kbd> on the button |
 | Clear | Clear button | <kbd>C</kbd> |
 | Randomize (25%) | Randomize button: pauses, replaces the board and resets the generation to 0 | — |
 | Speed | Speed slider (1–120 gen/s) | Arrow keys on the slider |
-| Place a pattern | Pick one in the **Pattern library**, then click the board — or drag and release on touch | — |
+| Place a pattern | Pick one in the **Pattern library**, then click the board — or drag and release on touch. Placing is a temporary mode: your tool is back afterwards, and choosing another tool cancels it. | — |
 | Rotate pattern | Toast **Rotate** button | <kbd>R</kbd> |
 | Cancel | Toast **Cancel** button | <kbd>Esc</kbd> reverts the stroke in progress exactly, or cancels a pattern being placed; with nothing to cancel it pauses |
 | Zoom | Mouse wheel / trackpad / two-finger pinch | <kbd>+</kbd> / <kbd>−</kbd> |
-| Pan | Right-drag, middle-drag, <kbd>Shift</kbd>-drag, or two-finger drag | — |
+| Pan (any tool) | Right-drag, middle-drag, <kbd>Shift</kbd>-drag, or two-finger drag | — |
 | Fit board to screen | **Fit board** button | <kbd>F</kbd> |
 | Theme | **Light / Dark / System** switch in the header. System follows your OS until you choose Light or Dark; your choice is kept in this browser. | Arrow keys inside the switch |
 
@@ -55,15 +59,15 @@ node --test
 ## Architecture
 
 ```
-index.html         Markup: header with theme switch, board panel, sidebar cards, stamp toast, live region
+index.html         Markup: header with theme switch, board panel with tools, sidebar cards, Help dialog, stamp toast, live region
 styles.css         Layout and design tokens (light + dark via data-theme), canvas colors as CSS variables
 src/engine.js      Pure simulation: Uint8Array double buffers, B3/S23 on a torus, frame Clock
 src/patterns.js    Pure preset data, plaintext/RLE parsing, 90° rotation
 src/renderer.js    Canvas drawing: device-pixel sizing, offscreen cell layer, gridlines, overlays
 src/session.js     Play state and the rules for when the board may change (pause-on-edit)
-src/input.js       Pointer painting (coalesced events + Bresenham), stamping, wheel/pan/pinch
+src/input.js       Draw/Erase/Pan tools, pointer painting (coalesced events + Bresenham), stamping, wheel/pan/pinch
 src/theme.js       Theme preference (system / light / dark), persistence, canvas palette reading
-src/ui.js          Sidebar, status, pattern library, stamp toast, keyboard shortcuts
+src/ui.js          Sidebar, tools, status, pattern library, Help dialog, stamp toast, keyboard shortcuts
 src/main.js        Wiring and the requestAnimationFrame loop
 test/*.test.js     node:test suites for engine, patterns, renderer math, input math, theme contrast
 ```

@@ -6,15 +6,22 @@ import { PREFERENCES } from './theme.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
+const TOOL_TEXT = {
+  draw: { label: 'Draw cells', hint: 'Draw: drag to add cells.' },
+  erase: { label: 'Erase cells', hint: 'Erase: drag to remove cells.' },
+  pan: { label: 'Pan the view', hint: 'Pan: drag to move the view.' },
+};
+
 // Screen-reader announcements: rare while running, prompt-ish while paused.
 const ANNOUNCE_RUNNING_MS = 5000;
 const ANNOUNCE_PAUSED_MS = 1000;
 
 export class UI {
   // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
-  //            setSpeed, choosePattern, rotate, setTheme }
+  //            setSpeed, choosePattern, rotate, setTheme, setTool }
   constructor(root, actions) {
     this.actions = actions;
+    this.root = root;
     this.el = {
       play: root.getElementById('play'),
       playLabel: root.getElementById('play-label'),
@@ -34,8 +41,18 @@ export class UI {
       toastRotate: root.getElementById('toast-rotate'),
       toastCancel: root.getElementById('toast-cancel'),
       announcer: root.getElementById('announcer'),
+      board: root.getElementById('board'),
+      toolGroup: root.getElementById('tool-group'),
+      toolLabel: root.getElementById('tool-label'),
+      hintTool: root.getElementById('hint-tool'),
+      help: root.getElementById('help'),
+      helpOpen: root.getElementById('help-open'),
+      helpClose: root.getElementById('help-close'),
     };
     this.themeInputs = [...root.querySelectorAll('input[name="theme"]')];
+    this.toolInputs = [...root.querySelectorAll('input[name="tool"]')];
+    this.tool = 'draw';
+    this.placing = null;
     this.shown = { generation: -1, population: -1, running: null, editing: null };
     this.announced = { text: '', time: -Infinity };
 
@@ -58,7 +75,55 @@ export class UI {
       });
     }
 
+    for (const input of this.toolInputs) {
+      input.addEventListener('change', () => {
+        if (input.checked) actions.setTool(input.value);
+      });
+    }
+
+    this.bindHelp();
     root.addEventListener('keydown', (e) => this.onKeyDown(e));
+  }
+
+  // The dialog is modal, so the board and toolbar are inert while it is open;
+  // Escape and the Close button dismiss it and focus goes back to the trigger.
+  bindHelp() {
+    const { help, helpOpen, helpClose } = this.el;
+    helpOpen.addEventListener('click', () => help.showModal());
+    helpClose.addEventListener('click', () => help.close());
+    // A click on the backdrop (the dialog element itself) also closes it.
+    help.addEventListener('click', (e) => {
+      if (e.target === help) help.close();
+    });
+    help.addEventListener('close', () => helpOpen.focus());
+  }
+
+  setBoardSize(width, height) {
+    for (const span of this.root.querySelectorAll('[data-board-size]')) {
+      span.textContent = `${width} × ${height}`;
+    }
+  }
+
+  // Reflects the selected tool; placing a pattern is shown on top of it.
+  showTool(tool) {
+    this.tool = tool;
+    this.el.board.dataset.tool = tool;
+    for (const input of this.toolInputs) input.checked = input.value === tool;
+    this.refreshToolText();
+  }
+
+  refreshToolText() {
+    const { toolGroup, toolLabel, hintTool } = this.el;
+    const text = TOOL_TEXT[this.tool];
+    if (this.placing) {
+      toolGroup.dataset.placing = 'true';
+      toolLabel.textContent = `Placing ${this.placing}`;
+      hintTool.textContent = `Placing ${this.placing}: click the board to place it.`;
+    } else {
+      delete toolGroup.dataset.placing;
+      toolLabel.textContent = text.label;
+      hintTool.textContent = text.hint;
+    }
   }
 
   showSpeed() {
@@ -99,11 +164,15 @@ export class UI {
     this.el.toastText.textContent = `Placing ${name} — ${touch ? 'drag, then release to place.' : 'click the board to place.'}`;
     this.el.toast.hidden = false;
     this.markActivePattern(id);
+    this.placing = name;
+    this.refreshToolText();
   }
 
   hideStamp() {
     this.el.toast.hidden = true;
     this.markActivePattern(null);
+    this.placing = null;
+    this.refreshToolText();
   }
 
   markActivePattern(id) {
@@ -121,6 +190,8 @@ export class UI {
 
   onKeyDown(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // Keys inside the Help dialog (Escape to close, Tab, Enter on Close) belong to it.
+    if (e.target?.closest?.('dialog')) return;
     if (FORM_TAGS.has(e.target?.tagName) && e.key !== 'Escape') return;
     // A focused button handles its own Space/Enter activation.
     if (e.target?.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
