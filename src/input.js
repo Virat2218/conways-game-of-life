@@ -100,9 +100,10 @@ export class Input {
     canvas.addEventListener('keydown', (e) => this.handleKey(e));
     canvas.addEventListener('focus', () => this.handleFocus());
     canvas.addEventListener('blur', () => this.hideCursor());
-    // A resize (window, layout) can crop a cursor near an edge; the renderer's own
-    // observer was created first, so the canvas already has its new size here.
-    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.revealCursor()).observe(canvas);
+    // Whatever moves the view (keyboard zoom, Fit, a resize) must not strand a
+    // shown cursor off-screen. Pointer input hides the cursor first (see handleDown
+    // and onWheel), so this never fights a mouse or touch pan or zoom.
+    renderer.onChange?.(() => this.revealCursor());
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
@@ -174,7 +175,7 @@ export class Input {
     this.renderer.revealCell(this.cursor.x, this.cursor.y);
   }
 
-  // After the view changes under a shown cursor (keyboard zoom, a resize), keep it visible.
+  // After the view changes under a shown cursor, keep it visible.
   revealCursor() {
     if (this.cursorShown && this.cursor) this.renderer.revealCell(this.cursor.x, this.cursor.y);
   }
@@ -346,6 +347,8 @@ export class Input {
 
   onWheel(e) {
     e.preventDefault();
+    // The pointer is in charge of the view now; the keyboard cursor reappears on the next arrow key.
+    if (this.cursorShown) this.hideCursor();
     const steps = wheelSteps(this.wheel, e.deltaY, e.deltaMode, e.timeStamp);
     if (steps) this.renderer.zoomBy(steps, e.clientX, e.clientY);
   }

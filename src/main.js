@@ -61,7 +61,6 @@ const formatCellSize = (css) => (Number.isInteger(css) ? String(css) : css.toFix
 
 function zoom(steps) {
   const zoomed = renderer.zoomBy(steps);
-  input.revealCursor();
   if (zoomed) ui.say(`Zoom ${formatCellSize(renderer.renderedCellCss)} pixels per cell`);
   else ui.say(steps > 0 ? 'Already at the maximum zoom' : 'Already at the minimum zoom');
 }

@@ -257,3 +257,32 @@ test('revealCursor keeps a shown cursor in view after the view changes, and does
   fresh.input.revealCursor();
   assert.equal(fresh.log.reveals.length, 0, 'no cursor yet: nothing to reveal');
 });
+
+test('every view change re-reveals a shown cursor: zoom, Fit and resize all go through the renderer', () => {
+  const t = setup({ width: 40, height: 30 });
+  t.key('ArrowDown');
+  const before = t.log.reveals.length;
+  t.viewChanged(); // what zoomBy, fit, fitLive and resize each end with
+  t.viewChanged();
+  assert.equal(t.log.reveals.length, before + 2);
+  assert.deepEqual(t.log.reveals.at(-1), cursor(t));
+});
+
+test('a hidden cursor is left alone by view changes, and the wheel hands the view to the pointer', () => {
+  const t = setup({ width: 40, height: 30 });
+  t.viewChanged();
+  assert.equal(t.log.reveals.length, 0, 'no cursor yet');
+  t.key('ArrowRight');
+  const revealed = t.log.reveals.length;
+  t.wheel(-100); // wheel zoom: pointer input takes over, the cursor goes away
+  assert.equal(t.input.cursorShown, false);
+  assert.equal(t.log.cursors.at(-1), null);
+  t.viewChanged(); // the zoom's own view change must not pull the view back to the cursor
+  assert.equal(t.log.reveals.length, revealed);
+  t.key('ArrowRight');
+  assert.ok(t.log.reveals.length > revealed, 'the next arrow key brings the cursor back into view');
+  t.blur();
+  const after = t.log.reveals.length;
+  t.viewChanged();
+  assert.equal(t.log.reveals.length, after, 'blurred: not tracked');
+});
