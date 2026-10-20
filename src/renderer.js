@@ -7,14 +7,16 @@ const MINOR_GRID_MIN_CSS = 5;
 const MAJOR_GRID_MIN_CSS = 2;
 const MAJOR_GRID_EVERY = 10;
 
+// Fallback palette, identical to the light theme in styles.css (a test keeps
+// them in step). The page normally overrides it from CSS custom properties.
 export const DEFAULT_COLORS = {
-  background: '#e9e9e4',
-  board: '#ffffff',
-  cell: '#1c1c1c',
-  gridMinor: 'rgba(0, 0, 0, 0.08)',
-  gridMajor: 'rgba(0, 0, 0, 0.2)',
-  hover: '#2f6fde',
-  ghost: 'rgba(47, 111, 222, 0.55)',
+  background: '#e8eee8',
+  board: '#fbfdfa',
+  cell: '#166534',
+  gridMinor: 'rgba(22, 101, 52, 0.09)',
+  gridMajor: 'rgba(22, 101, 52, 0.2)',
+  hover: '#176b2e',
+  ghost: 'rgba(23, 107, 46, 0.5)',
 };
 
 // --- Pure geometry helpers (unit-tested) -----------------------------------
