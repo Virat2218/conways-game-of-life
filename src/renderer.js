@@ -43,6 +43,33 @@ export function fitZoomIndex(viewportWidth, viewportHeight, gridWidth, gridHeigh
   return best;
 }
 
+// Inclusive bounding box of the live cells in board coordinates, or null when
+// the board is empty. Cells that wrap across an edge are not joined: a glider
+// split over the left and right edges spans the whole width.
+export function liveBounds(cells, width, height) {
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) {
+      if (!cells[row + x]) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return maxX < 0 ? null : { minX, minY, maxX, maxY };
+}
+
+// Empty cells kept around the live cells when fitting them: two, or 5% of the
+// longer side for big shapes.
+export function fitMargin({ minX, minY, maxX, maxY }) {
+  return Math.max(2, Math.ceil(Math.max(maxX - minX + 1, maxY - minY + 1) * 0.05));
+}
+
 // Zoom level closest to a continuous cell size, compared on a log scale.
 export function nearestZoomIndex(cellCss) {
   let best = 0;
@@ -284,6 +311,42 @@ export class Renderer {
       this.dpr,
     );
     this.center();
+  }
+
+  get canZoomIn() {
+    return this.zoomIndex < ZOOM_LEVELS.length - 1;
+  }
+
+  get canZoomOut() {
+    return this.zoomIndex > 0;
+  }
+
+  // Rendered cell size in CSS pixels. At fractional pixel ratios cells snap to
+  // whole device pixels, so this can differ slightly from the nominal level.
+  get renderedCellCss() {
+    return this.cellSize / this.dpr;
+  }
+
+  // Zooms and centres on the live cells (plus a small margin). An empty board
+  // falls back to fitting the whole board. Returns { empty, fitted }; `fitted`
+  // is false when even the smallest zoom cannot show the cells, in which case
+  // they are centred and the view is honestly clipped.
+  fitLive() {
+    const { width, height } = this.engine;
+    const box = liveBounds(this.engine.cells, width, height);
+    if (!box) {
+      this.fit();
+      return { empty: true, fitted: true };
+    }
+    const margin = fitMargin(box);
+    const spanX = box.maxX - box.minX + 1 + 2 * margin;
+    const spanY = box.maxY - box.minY + 1 + 2 * margin;
+    this.zoomIndex = fitZoomIndex(this.canvas.width, this.canvas.height, spanX, spanY, this.dpr);
+    const cs = this.cellSize;
+    this.offsetX = Math.round(this.canvas.width / 2 - ((box.minX + box.maxX + 1) / 2) * cs);
+    this.offsetY = Math.round(this.canvas.height / 2 - ((box.minY + box.maxY + 1) / 2) * cs);
+    this.viewChanged();
+    return { empty: false, fitted: spanX * cs <= this.canvas.width && spanY * cs <= this.canvas.height };
   }
 
   center() {
