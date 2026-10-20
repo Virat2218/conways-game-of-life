@@ -65,6 +65,9 @@ export class Input {
     // Called before the first change of a stroke and before a pattern is
     // armed, so the owner can pause the simulation first.
     this.onEditStart = null;
+    // onTransaction('begin' | 'commit' | 'abort', { label }) brackets each stroke
+    // and pattern placement so the owner can record it as one undo step.
+    this.onTransaction = null;
     // { pointerId, x, y } while right-, middle- or shift-dragging the view.
     this.pan = null;
     // Active touch points by pointerId -> { x, y }.
@@ -295,8 +298,10 @@ export class Input {
       return;
     }
     const o = this.stampOrigin(cell);
+    this.onTransaction?.('begin');
     // Engine.set wraps, so stamps near an edge continue on the opposite side.
     for (const [x, y] of pattern.cells) this.engine.set(x + o.x, y + o.y, 1);
+    this.onTransaction?.('commit', { label: `Place ${pattern.name}` });
     this.endStamp('placed');
   }
 
@@ -335,8 +340,10 @@ export class Input {
     if (!cell) return;
     e.preventDefault();
     this.onEditStart?.();
+    this.onTransaction?.('begin');
     this.canvas.setPointerCapture(e.pointerId);
     this.stroke = {
+      label: this.tool === 'erase' ? 'Erase' : 'Draw',
       pointerId: e.pointerId,
       value: this.tool === 'erase' ? 0 : 1,
       last: cell,
@@ -388,7 +395,9 @@ export class Input {
   endStroke(e) {
     if (!this.stroke || e.pointerId !== this.stroke.pointerId) return;
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+    const { label } = this.stroke;
     this.stroke = null;
+    this.onTransaction?.('commit', { label });
   }
 
   paint(x, y) {
@@ -411,6 +420,7 @@ export class Input {
       this.canvas.releasePointerCapture(stroke.pointerId);
     }
     this.stroke = null;
+    this.onTransaction?.('abort');
   }
 
   updateHover(e) {
