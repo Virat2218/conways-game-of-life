@@ -684,48 +684,83 @@ kbd {
 
 .library {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
-.pattern-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: var(--tap);
-  padding: 6px 12px;
+.pattern-card {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--panel-2);
-  color: var(--fg);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
-.pattern-item:hover {
-  border-color: var(--border-strong);
-}
-
-.pattern-item[data-active="true"] {
+.pattern-card[data-active="true"] {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
+/* Cells are drawn in the accent colour on the board's own background. */
+.pattern-preview {
+  width: 76px;
+  height: 76px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--board);
+  fill: var(--cell);
+  shape-rendering: crispEdges;
+}
+
+.pattern-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pattern-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .pattern-name {
-  flex: 1;
-  font-weight: 500;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pattern-tag {
+  color: var(--muted);
+  font: 11px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pattern-desc {
+  margin: 0;
+  color: var(--fg);
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .pattern-meta {
+  margin: 0;
   color: var(--muted);
-  font: 11px/1 var(--font-mono);
+  font: 11px/1.2 var(--font-mono);
 }
 
-.pattern-item .icon {
-  width: 16px;
-  height: 16px;
-  color: var(--muted);
+.pattern-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pattern-actions .btn {
+  min-height: var(--tap);
 }
 
 /* --- Rules and footer ---------------------------------------------------- */
@@ -1041,4 +1076,50 @@ kbd {
 
 .help-body p {
   margin: 0;
+}
+
+/* --- Start hint ---------------------------------------------------------- */
+
+.start-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 24px);
+  padding: 4px 4px 4px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+
+.start-hint[hidden] {
+  display: none;
+}
+
+.start-hint-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.start-hint-close:hover {
+  color: var(--fg);
+}
+
+.start-hint-close .icon {
+  width: 16px;
+  height: 16px;
 }

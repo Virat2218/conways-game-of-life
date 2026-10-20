@@ -45,7 +45,7 @@
       <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3.8 12a8.2 8.2 0 1 0 2.6-6" /><path d="M3.6 4.4v4.2h4.2" /></symbol>
       <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" /></symbol>
-      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
     </svg>
 
     <div class="app">
@@ -128,6 +128,12 @@
           </div>
           <div class="stage">
             <canvas id="board" aria-label="Game of Life board"></canvas>
+            <div class="start-hint" id="start-hint">
+              <span>Press <strong>Play</strong> to see it evolve.</span>
+              <button type="button" class="start-hint-close" id="start-hint-close" aria-label="Dismiss hint">
+                <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+              </button>
+            </div>
             <div class="toast" id="toast" role="status" hidden>
               <span id="toast-text"></span>
               <button type="button" class="toast-btn" id="toast-rotate">Rotate <kbd>R</kbd></button>
@@ -192,7 +198,7 @@
 
           <section class="card" aria-labelledby="library-heading">
             <h2 class="card-head" id="library-heading"><span>Pattern library</span><span class="card-index" aria-hidden="true">02</span></h2>
-            <p class="card-note">Choose a pattern, then place it on the board.</p>
+            <p class="card-note"><strong>Load</strong> replaces the board with a pattern, paused at generation 0. <strong>Stamp</strong> adds it to the board where you click.</p>
             <ul class="library" id="library"></ul>
           </section>
 
@@ -230,7 +236,7 @@
         <section>
           <h3>Place a pattern</h3>
           <ul>
-            <li>Choose one in the Pattern library, then click the board. On a touch screen, drag to position it and release to place it.</li>
+            <li><strong>Load</strong> in the Pattern library replaces the whole board (Undo brings it back). <strong>Stamp</strong> adds a pattern instead: click the board to place it. On a touch screen, drag to position it and release to place it.</li>
             <li><kbd>R</kbd> rotates it and <kbd>Esc</kbd> cancels. You return to the tool you had selected.</li>
           </ul>
         </section>

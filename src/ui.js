@@ -1,7 +1,7 @@
 // Sidebar, status, theme switch, stamp toast and keyboard shortcuts. Translates
 // DOM events into actions; owns no simulation state.
 
-import { PRESETS } from './patterns.js';
+import { PRESETS, CATEGORIES, previewPath } from './patterns.js';
 import { PREFERENCES } from './theme.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
@@ -53,6 +53,8 @@ export class UI {
       status: root.getElementById('status'),
       statusText: root.getElementById('status-text'),
       library: root.getElementById('library'),
+      startHint: root.getElementById('start-hint'),
+      startHintClose: root.getElementById('start-hint-close'),
       toast: root.getElementById('toast'),
       toastText: root.getElementById('toast-text'),
       toastRotate: root.getElementById('toast-rotate'),
@@ -89,6 +91,7 @@ export class UI {
     this.showSpeed();
 
     this.buildLibrary(root);
+    this.bindButton(this.el.startHintClose, () => this.hideHint());
     this.bindButton(this.el.toastRotate, actions.rotate);
     this.bindButton(this.el.toastCancel, actions.escape);
 
@@ -160,22 +163,63 @@ export class UI {
 
   buildLibrary(root) {
     this.libraryButtons = new Map();
+    const svgNS = 'http://www.w3.org/2000/svg';
     for (const preset of PRESETS) {
       const item = root.createElement('li');
-      const button = root.createElement('button');
-      button.type = 'button';
-      button.className = 'pattern-item';
-      button.dataset.pattern = preset.id;
-      button.innerHTML =
-        '<span class="pattern-name"></span><span class="pattern-meta"></span>' +
-        '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>';
-      button.querySelector('.pattern-name').textContent = preset.name;
-      button.querySelector('.pattern-meta').textContent = `${preset.cells.length} cells`;
-      this.bindButton(button, () => this.actions.choosePattern(preset.id));
-      item.append(button);
+      item.className = 'pattern-card';
+      item.dataset.preset = preset.id;
+
+      // The miniature is drawn from the pattern's own cell coordinates.
+      const preview = root.createElementNS(svgNS, 'svg');
+      preview.setAttribute('class', 'pattern-preview');
+      preview.setAttribute('viewBox', `-1 -1 ${preset.width + 2} ${preset.height + 2}`);
+      preview.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      preview.setAttribute('aria-hidden', 'true');
+      preview.setAttribute('focusable', 'false');
+      const path = root.createElementNS(svgNS, 'path');
+      path.setAttribute('d', previewPath(preset));
+      preview.append(path);
+
+      const body = root.createElement('div');
+      body.className = 'pattern-body';
+      body.innerHTML =
+        '<div class="pattern-head"><h3 class="pattern-name"></h3><span class="pattern-tag"></span></div>' +
+        '<p class="pattern-desc"></p><p class="pattern-meta"></p>';
+      body.querySelector('.pattern-name').textContent = preset.name;
+      body.querySelector('.pattern-tag').textContent = CATEGORIES[preset.category];
+      body.querySelector('.pattern-desc').textContent = preset.description;
+      body.querySelector('.pattern-meta').textContent = `${preset.cells.length} cells · ${preset.width} × ${preset.height}`;
+
+      const actions = root.createElement('div');
+      actions.className = 'pattern-actions';
+      const load = root.createElement('button');
+      load.type = 'button';
+      load.className = 'btn pattern-load';
+      load.dataset.load = preset.id;
+      load.textContent = 'Load';
+      load.setAttribute('aria-label', `Load ${preset.name} on a clean board`);
+      load.title = 'Replace the board with this pattern, paused at generation 0';
+      const stamp = root.createElement('button');
+      stamp.type = 'button';
+      stamp.className = 'btn pattern-stamp';
+      stamp.dataset.pattern = preset.id;
+      stamp.textContent = 'Stamp';
+      stamp.setAttribute('aria-label', `Stamp ${preset.name} onto the board`);
+      stamp.title = 'Keep the board and place this pattern where you click';
+      actions.append(load, stamp);
+      body.append(actions);
+
+      this.bindButton(load, () => this.actions.loadPattern(preset.id));
+      this.bindButton(stamp, () => this.actions.choosePattern(preset.id));
+      item.append(preview, body);
       this.el.library.append(item);
-      this.libraryButtons.set(preset.id, button);
+      this.libraryButtons.set(preset.id, item);
     }
+  }
+
+  // One-way: once dismissed (or made unnecessary) the start hint stays gone.
+  hideHint() {
+    this.el.startHint.hidden = true;
   }
 
   setThemePreference(preference) {

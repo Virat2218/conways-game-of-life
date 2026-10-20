@@ -158,11 +158,78 @@ export function rotate(pattern) {
   return normalize(cells.map(([x, y]) => [height - 1 - y, x]));
 }
 
+export const CATEGORIES = {
+  spaceship: 'Spaceship',
+  oscillator: 'Oscillator',
+  gun: 'Gun',
+  methuselah: 'Methuselah',
+};
+
+// Facts about each preset, checked against the engine by test/pattern-facts.test.js.
+// `period` is the number of generations after which the pattern repeats (shifted
+// for spaceships). The long-lived patterns describe an unbounded grid, which
+// this wrapping 256×160 board is not, so they say so.
+const PRESET_META = {
+  glider: {
+    category: 'spaceship',
+    period: 4,
+    description: 'Travels one cell diagonally every 4 generations.',
+  },
+  lwss: {
+    category: 'spaceship',
+    period: 4,
+    description: 'Travels two cells sideways every 4 generations.',
+  },
+  gosper: {
+    category: 'gun',
+    period: 30,
+    description: 'Fires a new glider every 30 generations. Here the gliders wrap around the board.',
+  },
+  pulsar: {
+    category: 'oscillator',
+    period: 3,
+    description: 'Repeats every 3 generations.',
+  },
+  pentadecathlon: {
+    category: 'oscillator',
+    period: 15,
+    description: 'Repeats every 15 generations.',
+  },
+  rpentomino: {
+    category: 'methuselah',
+    description: 'Five cells that take 1,103 generations to settle on an unbounded grid. Wrapping edges can change what happens here.',
+  },
+  acorn: {
+    category: 'methuselah',
+    description: 'Seven cells that take 5,206 generations to settle on an unbounded grid. Wrapping edges can change what happens here.',
+  },
+  diehard: {
+    category: 'methuselah',
+    vanishesAfter: 130,
+    description: 'Seven cells that vanish completely after 130 generations.',
+  },
+};
+
 export const PRESETS = Object.entries(PRESET_SOURCES).map(([id, { name, source }]) => ({
   id,
   name,
+  ...PRESET_META[id],
   ...parse(source),
 }));
+
+// SVG path data (in cell units) for a miniature of the pattern: one unit
+// square per live cell, so the preview is the pattern's own coordinates.
+export function previewPath(pattern) {
+  return pattern.cells.map(([x, y]) => `M${x} ${y}h1v1h-1z`).join('');
+}
+
+// Board position that centres the pattern's bounding box.
+export function centerOrigin(pattern, boardWidth, boardHeight) {
+  return {
+    x: Math.floor((boardWidth - pattern.width) / 2),
+    y: Math.floor((boardHeight - pattern.height) / 2),
+  };
+}
 
 export function getPreset(id) {
   return PRESETS.find((p) => p.id === id) ?? null;
