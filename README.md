@@ -23,15 +23,15 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 
 | Action | Mouse / touch | Keyboard |
 | --- | --- | --- |
-| Play / pause | Play button | <kbd>Space</kbd> |
+| Play / pause | Play button (unavailable while a stroke or pattern placement is in progress) | <kbd>Space</kbd> |
 | Step one generation | Step button | <kbd>N</kbd> or <kbd>→</kbd> |
-| Draw / erase | Drag on the board (starting on a live cell erases) | — |
+| Draw / erase | Drag on the board (starting on a live cell erases). Editing pauses a running simulation and leaves it paused; press Play to resume. | — |
 | Clear | Clear button | <kbd>C</kbd> |
-| Randomize (25%) | Randomize button | — |
+| Randomize (25%) | Randomize button: pauses, replaces the board and resets the generation to 0 | — |
 | Speed | Speed slider (1–120 gen/s) | Arrow keys on the slider |
 | Place a pattern | Pick one in the **Pattern library**, then click the board — or drag and release on touch | — |
 | Rotate pattern | Toast **Rotate** button | <kbd>R</kbd> |
-| Cancel | Toast **Cancel** button | <kbd>Esc</kbd> (also pauses when nothing to cancel) |
+| Cancel | Toast **Cancel** button | <kbd>Esc</kbd> reverts the stroke in progress exactly, or cancels a pattern being placed; with nothing to cancel it pauses |
 | Zoom | Mouse wheel / trackpad / two-finger pinch | <kbd>+</kbd> / <kbd>−</kbd> |
 | Pan | Right-drag, middle-drag, <kbd>Shift</kbd>-drag, or two-finger drag | — |
 | Fit board to screen | **Fit board** button | <kbd>F</kbd> |
@@ -60,6 +60,7 @@ styles.css         Layout and design tokens (light + dark via data-theme), canva
 src/engine.js      Pure simulation: Uint8Array double buffers, B3/S23 on a torus, frame Clock
 src/patterns.js    Pure preset data, plaintext/RLE parsing, 90° rotation
 src/renderer.js    Canvas drawing: device-pixel sizing, offscreen cell layer, gridlines, overlays
+src/session.js     Play state and the rules for when the board may change (pause-on-edit)
 src/input.js       Pointer painting (coalesced events + Bresenham), stamping, wheel/pan/pinch
 src/theme.js       Theme preference (system / light / dark), persistence, canvas palette reading
 src/ui.js          Sidebar, status, pattern library, stamp toast, keyboard shortcuts
@@ -73,6 +74,7 @@ Design notes:
 
 - **Crispness.** Cell size is a whole number of device pixels chosen from fixed zoom levels, and the pan offset is rounded once per frame, so every line derives from one integer origin. Cells are written one pixel each to an offscreen canvas and scaled up with `imageSmoothingEnabled = false`, drawing only the visible range.
 - **Theming.** An inline script in `index.html` sets `data-theme` before first paint, from the saved choice or else the OS. `src/theme.js` keeps it current and re-reads the canvas palette from CSS variables whenever it changes, so the board re-themes even while paused.
+- **Editing.** Painting a stroke or arming a pattern pauses the simulation before anything changes and never resumes it. Play and Step stay unavailable until the edit ends, so a stroke is applied to a board that is standing still and Esc can restore it exactly.
 - **Timing.** The simulation is driven by `requestAnimationFrame` (never `setInterval`) with at most 10 steps per frame, so background tabs stay throttled.
 - **Deployment.** `.github/workflows/pages.yml` publishes the site files to GitHub Pages on every push to `master`. All asset paths are relative so the site works under `/conways-game-of-life/`.
 
