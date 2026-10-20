@@ -242,3 +242,18 @@ test('a rotated pattern keeps its name, so the undo step is labelled after it', 
   t.key('Enter');
   assert.deepEqual(labels, ['Place Lightweight spaceship']);
 });
+
+test('revealCursor keeps a shown cursor in view after the view changes, and does nothing when it is hidden', () => {
+  const t = setup({ width: 40, height: 30 });
+  t.key('ArrowRight');
+  const before = t.log.reveals.length;
+  t.input.revealCursor();
+  assert.equal(t.log.reveals.length, before + 1);
+  assert.deepEqual(t.log.reveals.at(-1), cursor(t));
+  t.blur();
+  t.input.revealCursor();
+  assert.equal(t.log.reveals.length, before + 1, 'hidden cursor: no view change');
+  const fresh = setup();
+  fresh.input.revealCursor();
+  assert.equal(fresh.log.reveals.length, 0, 'no cursor yet: nothing to reveal');
+});

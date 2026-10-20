@@ -171,6 +171,11 @@ export class Input {
     this.renderer.revealCell(this.cursor.x, this.cursor.y);
   }
 
+  // After the view changes under a shown cursor (keyboard zoom), keep it visible.
+  revealCursor() {
+    if (this.cursorShown && this.cursor) this.renderer.revealCell(this.cursor.x, this.cursor.y);
+  }
+
   hideCursor() {
     this.cursorShown = false;
     this.renderer.setCursor(null);
