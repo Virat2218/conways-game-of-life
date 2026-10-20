@@ -40,14 +40,27 @@ const session = new Session({
 });
 input.onEditStart = () => session.pause();
 
+const formatCellSize = (css) => (Number.isInteger(css) ? String(css) : css.toFixed(1));
+
+function zoom(steps) {
+  if (renderer.zoomBy(steps)) ui.say(`Zoom ${formatCellSize(renderer.renderedCellCss)} pixels per cell`);
+  else ui.say(steps > 0 ? 'Already at the maximum zoom' : 'Already at the minimum zoom');
+}
+
 const ui = new UI(document, {
   togglePlay: () => session.togglePlay(),
   step: () => session.step(),
   clear: () => session.clear(),
   randomize: () => session.randomize(0.25),
   fit: () => renderer.fit(),
-  zoomIn: () => renderer.zoomBy(1),
-  zoomOut: () => renderer.zoomBy(-1),
+  fitLive: () => {
+    const { empty, fitted } = renderer.fitLive();
+    if (empty) ui.say('No live cells, so the whole board is shown');
+    else if (!fitted) ui.say('The live cells are larger than the view even at the smallest zoom');
+    else ui.say(`Zoomed to the live cells, ${formatCellSize(renderer.renderedCellCss)} pixels per cell`);
+  },
+  zoomIn: () => zoom(1),
+  zoomOut: () => zoom(-1),
   escape: () => {
     if (!input.cancelEdit()) session.pause();
   },
@@ -110,6 +123,11 @@ function frame(now) {
     editing: input.editing,
     generation: engine.generation,
     population: engine.population,
+    view: {
+      zoomText: `${formatCellSize(renderer.renderedCellCss)} px/cell`,
+      canZoomIn: renderer.canZoomIn,
+      canZoomOut: renderer.canZoomOut,
+    },
     history: {
       canUndo: session.canUndo,
       canRedo: session.canRedo,

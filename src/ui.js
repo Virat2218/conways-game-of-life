@@ -28,7 +28,7 @@ const ANNOUNCE_PAUSED_MS = 1000;
 
 export class UI {
   // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
-  //            setSpeed, choosePattern, rotate, setTheme, setTool, undo, redo, restart }
+  //            setSpeed, choosePattern, rotate, setTheme, setTool, undo, redo, restart, fitLive }
   constructor(root, actions) {
     this.actions = actions;
     this.root = root;
@@ -39,6 +39,10 @@ export class UI {
       clear: root.getElementById('clear'),
       random: root.getElementById('random'),
       fit: root.getElementById('fit'),
+      fitLive: root.getElementById('fit-live'),
+      zoomIn: root.getElementById('zoom-in'),
+      zoomOut: root.getElementById('zoom-out'),
+      zoomValue: root.getElementById('zoom-value'),
       undo: root.getElementById('undo'),
       redo: root.getElementById('redo'),
       restart: root.getElementById('restart'),
@@ -66,7 +70,7 @@ export class UI {
     this.toolInputs = [...root.querySelectorAll('input[name="tool"]')];
     this.tool = 'draw';
     this.placing = null;
-    this.shown = { generation: -1, population: -1, running: null, editing: null, history: '' };
+    this.shown = { generation: -1, population: -1, running: null, editing: null, history: '', view: '' };
     this.announced = { text: '', time: -Infinity };
 
     this.bindButton(this.el.play, actions.togglePlay);
@@ -74,6 +78,9 @@ export class UI {
     this.bindButton(this.el.clear, actions.clear);
     this.bindButton(this.el.random, actions.randomize);
     this.bindButton(this.el.fit, actions.fit);
+    this.bindButton(this.el.fitLive, actions.fitLive);
+    this.bindButton(this.el.zoomIn, actions.zoomIn);
+    this.bindButton(this.el.zoomOut, actions.zoomOut);
     this.bindButton(this.el.undo, actions.undo);
     this.bindButton(this.el.redo, actions.redo);
     this.bindButton(this.el.restart, actions.restart);
@@ -267,7 +274,7 @@ export class UI {
     e.preventDefault();
   }
 
-  update({ running, editing = false, generation, population, history = {} }) {
+  update({ running, editing = false, generation, population, history = {}, view = {} }) {
     const { el, shown } = this;
     if (running !== shown.running || editing !== shown.editing) {
       shown.running = running;
@@ -282,6 +289,7 @@ export class UI {
       this.setBlocked(el.step, editing, 'Step one generation (N or →)');
     }
     this.updateHistory(editing, history);
+    this.updateView(view);
     if (generation !== shown.generation) {
       shown.generation = generation;
       el.generation.textContent = generation.toLocaleString();
@@ -291,6 +299,23 @@ export class UI {
       el.population.textContent = population.toLocaleString();
     }
     this.announce(running, generation, population);
+  }
+
+  // The zoom readout and the − / + buttons, which stop at the first and last level.
+  updateView({ zoomText = '', canZoomIn = true, canZoomOut = true } = {}) {
+    const key = [zoomText, canZoomIn, canZoomOut].join('|');
+    if (key === this.shown.view) return;
+    this.shown.view = key;
+    const { zoomValue, zoomIn, zoomOut } = this.el;
+    zoomValue.textContent = zoomText;
+    this.setLimit(zoomIn, canZoomIn, 'Zoom in (+)', 'Already at the maximum zoom');
+    this.setLimit(zoomOut, canZoomOut, 'Zoom out (−)', 'Already at the minimum zoom');
+  }
+
+  setLimit(button, available, title, limitTitle) {
+    if (available) button.removeAttribute('aria-disabled');
+    else button.setAttribute('aria-disabled', 'true');
+    button.title = available ? title : limitTitle;
   }
 
   // Undo, Redo and Restart: unavailable when there is nothing to do, and while

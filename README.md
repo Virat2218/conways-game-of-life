@@ -16,7 +16,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 - Undo and Redo for strokes, placed patterns, Clear and Randomize (the last 50 steps), and Restart from seed to rerun the setup you started from
 - A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
 - Eight classic presets with a ghost preview, rotation and touch placement
-- Wheel, trackpad and pinch zoom; drag panning; fit-to-screen
+- Wheel, trackpad, pinch and −/+ button zoom with a live px/cell readout; drag panning; Fit board and Fit live cells; a status line stating the 256 × 160 wrapping board
 - A canvas-and-sidebar workspace that stacks on phones, with Play and Step pinned to the bottom edge
 - Light and dark themes with a Light / Dark / System switch that remembers your choice
 - Keyboard shortcuts and screen-reader stats
@@ -41,7 +41,8 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | Cancel | Toast **Cancel** button | <kbd>Esc</kbd> reverts the stroke in progress exactly, or cancels a pattern being placed; with nothing to cancel it pauses |
 | Zoom | Mouse wheel / trackpad / two-finger pinch | <kbd>+</kbd> / <kbd>−</kbd> |
 | Pan (any tool) | Right-drag, middle-drag, <kbd>Shift</kbd>-drag, or two-finger drag | — |
-| Fit board to screen | **Fit board** button | <kbd>F</kbd> |
+| Fit board to screen | **Board** button | <kbd>F</kbd> |
+| Zoom to the live cells | **Live cells** button | — |
 | Theme | **Light / Dark / System** switch in the header. System follows your OS until you choose Light or Dark; your choice is kept in this browser. | Arrow keys inside the switch |
 
 ## Run locally

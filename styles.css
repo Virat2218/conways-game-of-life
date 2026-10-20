@@ -299,6 +299,31 @@ kbd {
   flex: 1;
 }
 
+.toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-caption {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.btn-icon {
+  width: var(--tap);
+  padding: 0;
+}
+
+.zoom-value {
+  min-width: 9ch;
+  color: var(--fg);
+  font: 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .tool-label {
   color: var(--muted);
   font-weight: 500;
@@ -401,6 +426,16 @@ kbd {
   font-size: 13px;
 }
 
+.board-notes {
+  min-width: 0;
+}
+
+.board-status {
+  margin-top: 2px;
+  color: var(--muted);
+  font: 11px/1.45 var(--font-mono);
+}
+
 .hint-coarse {
   display: none;
 }
@@ -413,6 +448,10 @@ kbd {
 @media (pointer: coarse) {
   .hint-fine,
   .kbd-hint {
+    display: none;
+  }
+
+  .status-long {
     display: none;
   }
 
@@ -842,24 +881,7 @@ kbd {
 }
 
 @media (max-width: 440px) {
-  /* Undo and Redo shrink to icons so they fit beside Fit board and Help. */
-  #undo .btn-text,
-  #redo .btn-text {
-    display: none;
-  }
-
-  #undo,
-  #redo {
-    min-width: var(--tap);
-    padding: 0;
-  }
-
-  /* "Fit" is enough here; the button's name stays "Fit board". */
-  .label-extra {
-    display: none;
-  }
-
-  /* Tools get a full-width row; Undo, Redo, Fit board and Help share the next. */
+  /* Tools get a full-width row; the other controls wrap beneath it. */
   .tool-group {
     width: 100%;
   }
@@ -876,7 +898,6 @@ kbd {
     display: none;
   }
 
-  #fit,
   #help-open {
     flex: 1;
   }

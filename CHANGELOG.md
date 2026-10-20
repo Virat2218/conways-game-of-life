@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added a Help dialog describing the real controls, shortcuts and the wrapping board.
 - Added Undo and Redo for strokes, placed patterns, Clear and Randomize (bounded to the latest 50 steps; Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z), and a Restart from seed button that returns to the setup a run started from at generation 0. Restart is itself undoable.
 - Added a Light / Dark / System theme switch. The choice is saved in the browser; System follows the OS. The page and the board both re-theme immediately, even while paused.
+- Added − / + zoom buttons with a px/cell readout (disabled at the limits), a Live cells fit that frames the living cells with a margin (or the whole board when empty), and a permanent "256 × 160 · Wrapping edges" status line.
 
 ## [1.0.0] - 2026-10-18
 

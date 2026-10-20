@@ -43,6 +43,8 @@
       <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></symbol>
       <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></symbol>
       <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3.8 12a8.2 8.2 0 1 0 2.6-6" /><path d="M3.6 4.4v4.2h4.2" /></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" /></symbol>
       <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15" /></symbol>
     </svg>
 
@@ -97,18 +99,28 @@
             </fieldset>
             <p class="tool-label" id="tool-label">Draw cells</p>
             <span class="toolbar-spacer"></span>
-            <button type="button" class="btn" id="undo" aria-label="Undo" title="Nothing to undo">
-              <svg class="icon" aria-hidden="true"><use href="#i-undo" /></svg>
-              <span class="btn-text">Undo</span>
-            </button>
-            <button type="button" class="btn" id="redo" aria-label="Redo" title="Nothing to redo">
-              <svg class="icon" aria-hidden="true"><use href="#i-redo" /></svg>
-              <span class="btn-text">Redo</span>
-            </button>
-            <button type="button" class="btn" id="fit" aria-label="Fit board" title="Fit board to screen (F)">
-              <svg class="icon" aria-hidden="true"><use href="#i-fit" /></svg>
-              <span>Fit<span class="label-extra"> board</span></span>
-            </button>
+            <div class="toolbar-group" role="group" aria-label="History">
+              <button type="button" class="btn btn-icon" id="undo" aria-label="Undo" title="Nothing to undo">
+                <svg class="icon" aria-hidden="true"><use href="#i-undo" /></svg>
+              </button>
+              <button type="button" class="btn btn-icon" id="redo" aria-label="Redo" title="Nothing to redo">
+                <svg class="icon" aria-hidden="true"><use href="#i-redo" /></svg>
+              </button>
+            </div>
+            <div class="toolbar-group" role="group" aria-label="Zoom">
+              <button type="button" class="btn btn-icon" id="zoom-out" aria-label="Zoom out" title="Zoom out (−)">
+                <svg class="icon" aria-hidden="true"><use href="#i-minus" /></svg>
+              </button>
+              <span class="zoom-value" id="zoom-value" title="Rendered size of one cell, in CSS pixels">8 px/cell</span>
+              <button type="button" class="btn btn-icon" id="zoom-in" aria-label="Zoom in" title="Zoom in (+)">
+                <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+              </button>
+            </div>
+            <div class="toolbar-group" role="group" aria-label="Fit view">
+              <span class="group-caption" aria-hidden="true">Fit</span>
+              <button type="button" class="btn" id="fit" aria-label="Fit board" title="Show the whole board (F)">Board</button>
+              <button type="button" class="btn" id="fit-live" aria-label="Fit live cells" title="Zoom to the live cells">Live cells</button>
+            </div>
             <button type="button" class="btn" id="help-open" aria-haspopup="dialog" title="How to use the board">
               <svg class="icon" aria-hidden="true"><use href="#i-help" /></svg>
               <span>Help</span>
@@ -123,11 +135,17 @@
             </div>
           </div>
           <div class="board-footer">
-            <p class="hint">
-              <span id="hint-tool">Draw: drag to add cells.</span>
-              <span class="hint-fine">Right-drag or Shift-drag to pan · Scroll to zoom</span>
-              <span class="hint-coarse">Pinch to zoom · Two fingers to pan</span>
-            </p>
+            <div class="board-notes">
+              <p class="hint">
+                <span id="hint-tool">Draw: drag to add cells.</span>
+                <span class="hint-fine">Right-drag or Shift-drag to pan · Scroll to zoom</span>
+                <span class="hint-coarse">Pinch to zoom · Two fingers to pan</span>
+              </p>
+              <p class="board-status">
+                <span data-board-size>256 × 160</span> · Wrapping edges
+                <span class="status-long">— patterns that leave one side return on the opposite side</span>
+              </p>
+            </div>
             <p class="kbd-hint"><kbd>Space</kbd> Play / pause</p>
           </div>
         </section>
@@ -221,7 +239,8 @@
           <ul>
             <li>Zoom with the mouse wheel or trackpad, <kbd>+</kbd> / <kbd>−</kbd>, or by pinching.</li>
             <li>Pan with the Pan tool, a right-, middle- or <kbd>Shift</kbd>-drag, or two fingers.</li>
-            <li><kbd>F</kbd> fits the whole board in view.</li>
+            <li><kbd>F</kbd> or <strong>Fit: Board</strong> shows the whole board. <strong>Fit: Live cells</strong> zooms to the live cells with a small margin, using the board's own coordinates, so a shape split across an edge fits the whole width.</li>
+            <li>The readout shows the rendered size of one cell in CSS pixels.</li>
           </ul>
         </section>
         <section>
