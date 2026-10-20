@@ -124,9 +124,12 @@ const ui = new UI(document, {
 ui.setThemePreference(theme.preference);
 
 input.onStampEnd = (reason) => {
+  // Read the focus before the toast, and any button in it, is hidden.
+  const active = document.activeElement;
+  const cancelledFromBoard = active === canvas || document.getElementById('toast').contains(active);
   ui.hideStamp();
   if (reason === 'placed') ui.say(`Placed ${stampName}`);
-  else if (stampReturnFocus && document.activeElement === canvas) stampReturnFocus.focus();
+  else if (stampReturnFocus && cancelledFromBoard) stampReturnFocus.focus();
   stampReturnFocus = null;
 };
 input.onCursor = (cell) =>
