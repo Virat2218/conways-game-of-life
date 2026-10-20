@@ -117,12 +117,18 @@ export class Session {
     this.pending = this.capture();
   }
 
-  commitTransaction(label) {
+  // `establishSeed` makes the new board the restart seed straight away (for a
+  // replaced board, as opposed to an edit that the next Play/Step will adopt).
+  commitTransaction(label, { establishSeed = false } = {}) {
     const before = this.pending;
     this.pending = null;
-    if (!before || this.engine.matches(before)) return false;
+    if (!before || this.engine.matches(before)) {
+      if (before && establishSeed) this.captureSeed();
+      return false;
+    }
     // Edited boards need a fresh seed at the next Play/Step.
     this.seed = null;
+    if (establishSeed) this.captureSeed();
     this.history.push({ label, before, after: this.capture() });
     return true;
   }
@@ -136,6 +142,18 @@ export class Session {
     this.beginTransaction();
     change();
     return this.commitTransaction(label);
+  }
+
+  // Replaces the whole board with `change` (generation 0, paused) and makes it
+  // the restart seed. One undo step. Ignored while a stroke is in progress.
+  load(label, change) {
+    if (this.isStroking()) return false;
+    this.pause();
+    this.beginTransaction();
+    this.engine.clear();
+    change();
+    this.commitTransaction(label, { establishSeed: true });
+    return true;
   }
 
   get canUndo() {

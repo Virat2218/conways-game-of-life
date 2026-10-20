@@ -15,7 +15,8 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 - Draw, Erase and Pan tools that work the same with mouse, pen and touch, and gap-free strokes at any zoom
 - Undo and Redo for strokes, placed patterns, Clear and Randomize (the last 50 steps), and Restart from seed to rerun the setup you started from
 - A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
-- Eight classic presets with a ghost preview, rotation and touch placement
+- A visual Pattern library of eight classic presets (spaceships, oscillators, a gun and methuselahs), each with a miniature drawn from its own cells, a factual description, and two actions: **Load** (replace the board) and **Stamp** (add to it with a ghost preview, rotation and touch placement)
+- A fresh session opens on a paused, centred Gosper glider gun with a dismissible "Press Play to see it evolve" hint
 - Wheel, trackpad, pinch and −/+ button zoom with a live px/cell readout; drag panning; Fit board and Fit live cells; a status line stating the 256 × 160 wrapping board
 - A canvas-and-sidebar workspace that stacks on phones, with Play and Step pinned to the bottom edge
 - Light and dark themes with a Light / Dark / System switch that remembers your choice
@@ -36,7 +37,8 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | Clear | Clear button | <kbd>C</kbd> |
 | Randomize (25%) | Randomize button: pauses, replaces the board and resets the generation to 0 | — |
 | Speed | Speed slider (1–120 gen/s) | Arrow keys on the slider |
-| Place a pattern | Pick one in the **Pattern library**, then click the board — or drag and release on touch. Placing is a temporary mode: your tool is back afterwards, and choosing another tool cancels it. | — |
+| Load a pattern | **Load** on a library card: pauses, cancels any stroke or placement in progress, replaces every cell, resets the generation to 0, makes the pattern the Restart seed and frames it. One undo step. | — |
+| Stamp a pattern | **Stamp** on a library card, then click the board (the board is kept) — or drag and release on touch. Placing is a temporary mode: your tool is back afterwards, and choosing another tool cancels it. | — |
 | Rotate pattern | Toast **Rotate** button | <kbd>R</kbd> |
 | Cancel | Toast **Cancel** button | <kbd>Esc</kbd> reverts the stroke in progress exactly, or cancels a pattern being placed; with nothing to cancel it pauses |
 | Zoom | Mouse wheel / trackpad / two-finger pinch | <kbd>+</kbd> / <kbd>−</kbd> |
@@ -66,7 +68,7 @@ node --test
 index.html         Markup: header with theme switch, board panel with tools, sidebar cards, Help dialog, stamp toast, live region
 styles.css         Layout and design tokens (light + dark via data-theme), canvas colors as CSS variables
 src/engine.js      Pure simulation: Uint8Array double buffers, B3/S23 on a torus, frame Clock
-src/patterns.js    Pure preset data, plaintext/RLE parsing, 90° rotation
+src/patterns.js    Preset data and metadata, plaintext/RLE parsing, rotation, preview paths
 src/renderer.js    Canvas drawing: device-pixel sizing, offscreen cell layer, gridlines, overlays
 src/session.js     Play state, pause-on-edit, undo/redo orchestration and the restart seed
 src/history.js     Bounded undo/redo stack of before/after board states

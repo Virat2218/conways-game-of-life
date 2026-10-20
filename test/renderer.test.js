@@ -268,3 +268,28 @@ test('zoom limits and the rendered cell size follow the level and DPR', () => {
   assert.equal(view.cellSize, 5, '4.5 device px snaps to 5');
   assert.ok(Math.abs(view.renderedCellCss - 3.333) < 0.01, 'and the readout reports the real size');
 });
+
+test('fitLive with a zoom cap never exceeds it, still shows the box, and the cap only ever lowers the zoom', () => {
+  const engine = new Engine(256, 160);
+  for (const [x, y] of [[100, 70], [101, 71], [99, 72], [100, 72], [101, 72]]) engine.set(x, y, 1);
+  for (const dpr of [1, 2, 2.625]) {
+    const free = viewOf(engine, { canvasW: Math.round(1020 * dpr), canvasH: Math.round(640 * dpr), dpr });
+    free.fitLive();
+    const capped = viewOf(engine, { canvasW: Math.round(1020 * dpr), canvasH: Math.round(640 * dpr), dpr });
+    const { fitted } = capped.fitLive({ maxCellCss: 16 });
+    assert.equal(ZOOM_LEVELS[capped.zoomIndex], 16, `dpr ${dpr}: a glider is capped at 16`);
+    assert.ok(capped.zoomIndex < free.zoomIndex);
+    assert.ok(fitted);
+  }
+  // A cap larger than what fits changes nothing; a cap below the first level still gives a valid level.
+  const wide = new Engine(256, 160);
+  for (let x = 0; x < 256; x++) wide.set(x, 80, 1);
+  const a = viewOf(wide);
+  a.fitLive();
+  const b = viewOf(wide);
+  b.fitLive({ maxCellCss: 48 });
+  assert.equal(a.zoomIndex, b.zoomIndex);
+  const c = viewOf(wide);
+  c.fitLive({ maxCellCss: 0.5 });
+  assert.equal(c.zoomIndex, 0);
+});

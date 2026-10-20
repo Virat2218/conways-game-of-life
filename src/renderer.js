@@ -331,7 +331,8 @@ export class Renderer {
   // falls back to fitting the whole board. Returns { empty, fitted }; `fitted`
   // is false when even the smallest zoom cannot show the cells, in which case
   // they are centred and the view is honestly clipped.
-  fitLive() {
+  // `maxCellCss` stops small shapes from being blown up to the largest zoom.
+  fitLive({ maxCellCss = Infinity } = {}) {
     const { width, height } = this.engine;
     const box = liveBounds(this.engine.cells, width, height);
     if (!box) {
@@ -341,7 +342,11 @@ export class Renderer {
     const margin = fitMargin(box);
     const spanX = box.maxX - box.minX + 1 + 2 * margin;
     const spanY = box.maxY - box.minY + 1 + 2 * margin;
-    this.zoomIndex = fitZoomIndex(this.canvas.width, this.canvas.height, spanX, spanY, this.dpr);
+    const cap = ZOOM_LEVELS.findLastIndex((level) => level <= maxCellCss);
+    this.zoomIndex = Math.min(
+      fitZoomIndex(this.canvas.width, this.canvas.height, spanX, spanY, this.dpr),
+      Math.max(cap, 0),
+    );
     const cs = this.cellSize;
     this.offsetX = Math.round(this.canvas.width / 2 - ((box.minX + box.maxX + 1) / 2) * cs);
     this.offsetY = Math.round(this.canvas.height / 2 - ((box.minY + box.maxY + 1) / 2) * cs);

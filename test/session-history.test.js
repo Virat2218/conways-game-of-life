@@ -343,3 +343,90 @@ test('cancelled strokes, pinch reverts, cancelled placements and no-op placement
   t.input.setStamp(getPreset('glider')); t.move(20, 12); t.down(20, 12);
   assert.equal(t.session.history.entries.length, 1, 'the identical second placement was a no-op');
 });
+
+// --- Loading a pattern onto a clean board -------------------------------------
+
+const place = (engine, preset, ox = 8, oy = 6) => () => {
+  for (const [x, y] of preset.cells) engine.set(x + ox, y + oy, 1);
+};
+
+test('load replaces the board, resets the generation, pauses and sets the restart seed', () => {
+  const { engine, session } = make({ width: 60, height: 40 });
+  engine.randomize(0.3, seeded(7));
+  session.togglePlay();
+  session.advance(1000);
+  assert.ok(engine.generation > 0 && session.running);
+  const glider = getPreset('glider');
+  assert.equal(session.load('Load Glider', place(engine, glider)), true);
+  assert.equal(session.running, false, 'paused');
+  assert.equal(engine.generation, 0);
+  assert.equal(engine.population, 5, 'every old cell is gone');
+  assert.notEqual(session.seed, null, 'the loaded board is the restart seed');
+  assert.equal(session.canRestart, false, 'nothing to restart yet');
+  session.step();
+  session.step();
+  assert.equal(session.canRestart, true);
+  session.restart();
+  assert.equal(engine.generation, 0);
+  assert.equal(engine.population, 5, 'restart returns to the loaded pattern, not the earlier board');
+});
+
+test('load is one undo step that brings back the whole earlier board, and redo reloads it with its seed', () => {
+  const { engine, session } = make({ width: 60, height: 40 });
+  engine.randomize(0.3, seeded(3));
+  const earlier = snap(engine);
+  session.load('Load Pulsar', place(engine, getPreset('pulsar')));
+  const loaded = snap(engine);
+  assert.equal(session.history.undoLabel, 'Load Pulsar');
+  assert.equal(session.history.entries.length, 1);
+  session.undo();
+  assert.deepEqual(snap(engine), earlier);
+  session.redo();
+  assert.deepEqual(snap(engine), loaded);
+  assert.notEqual(session.seed, null, 'the seed is back after Redo');
+  session.step();
+  assert.equal(session.canRestart, true);
+});
+
+test('loading the same preset twice works, and the second load adds no history', () => {
+  const { engine, session } = make({ width: 60, height: 40 });
+  const rpent = getPreset('rpentomino');
+  session.load('Load R-pentomino', place(engine, rpent));
+  const first = snap(engine);
+  session.step();
+  session.step();
+  session.step();
+  assert.equal(session.load('Load R-pentomino', place(engine, rpent)), true);
+  assert.deepEqual(snap(engine), first, 'back to the clean pattern at generation 0');
+  assert.equal(session.history.entries.length, 2, 'the evolved board was replaced, so that load is its own step');
+  const entries = session.history.entries.length;
+  session.load('Load R-pentomino', place(engine, rpent));
+  assert.equal(session.history.entries.length, entries, 'an identical board adds nothing');
+  assert.notEqual(session.seed, null);
+});
+
+test('load is ignored while a stroke is in progress', () => {
+  const { engine, session, state } = make();
+  glider(engine);
+  const before = snap(engine);
+  state.stroking = true;
+  assert.equal(session.load('Load Glider', place(engine, getPreset('glider'))), false);
+  assert.deepEqual(snap(engine), before);
+  assert.equal(session.history.entries.length, 0);
+});
+
+test('stamping keeps the board while loading replaces it (the two actions differ)', () => {
+  const stamped = setupBoard({ width: 60, height: 40 });
+  stamped.engine.set(2, 2, 1);
+  stamped.engine.set(3, 2, 1);
+  stamped.input.setStamp(getPreset('glider'));
+  stamped.move(20, 20);
+  stamped.down(20, 20);
+  assert.equal(stamped.engine.population, 7, 'old cells kept, glider added');
+
+  const { engine, session } = make({ width: 60, height: 40 });
+  engine.set(2, 2, 1);
+  engine.set(3, 2, 1);
+  session.load('Load Glider', place(engine, getPreset('glider')));
+  assert.equal(engine.population, 5, 'old cells gone');
+});

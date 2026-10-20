@@ -4,7 +4,7 @@ import { Renderer } from './renderer.js';
 import { Input } from './input.js';
 import { UI } from './ui.js';
 import { createThemeController, readThemeColors } from './theme.js';
-import { getPreset } from './patterns.js';
+import { getPreset, centerOrigin } from './patterns.js';
 
 const canvas = document.getElementById('board');
 const engine = new Engine();
@@ -40,6 +40,14 @@ const session = new Session({
 });
 input.onEditStart = () => session.pause();
 
+// Largest zoom used when framing a freshly loaded pattern, so a glider is not blown up to fill the view.
+const LOAD_MAX_CELL_CSS = 16;
+
+function placeCentered(pattern) {
+  const o = centerOrigin(pattern, engine.width, engine.height);
+  for (const [x, y] of pattern.cells) engine.set(x + o.x, y + o.y, 1);
+}
+
 const formatCellSize = (css) => (Number.isInteger(css) ? String(css) : css.toFixed(1));
 
 function zoom(steps) {
@@ -71,6 +79,16 @@ const ui = new UI(document, {
     input.setStamp(preset);
     ui.showStamp(preset.name, preset.id);
   },
+  loadPattern: (id) => {
+    const preset = getPreset(id);
+    if (!preset) return;
+    // Abandon a pending stroke or placement first; that also removes any ghost.
+    input.cancelEdit();
+    const loaded = session.load(`Load ${preset.name}`, () => placeCentered(preset));
+    if (!loaded) return;
+    renderer.fitLive({ maxCellCss: LOAD_MAX_CELL_CSS });
+    ui.say(`Loaded ${preset.name} on a clean board. Paused at generation 0.`);
+  },
   rotate: () => input.rotateStamp(),
   setTheme: (preference) => theme.setPreference(preference),
   setTool: (tool) => input.setTool(tool),
@@ -99,24 +117,31 @@ input.onToolChange = (tool) => ui.showTool(tool);
 ui.showTool(input.tool);
 ui.setBoardSize(engine.width, engine.height);
 
-engine.randomize(0.25);
+// A fresh session opens on a paused Gosper glider gun rather than random noise.
+placeCentered(getPreset('gosper'));
 
 let fitted = false;
 renderer.onChange(() => {
   // Fit once the canvas has its first real size.
   if (!fitted && canvas.width > 0 && canvas.height > 0) {
     fitted = true;
-    renderer.fit();
+    renderer.fitLive({ maxCellCss: LOAD_MAX_CELL_CSS });
   }
 });
 
 // requestAnimationFrame drives everything: it is throttled in background tabs,
 // so the simulation never races there.
 let last = performance.now();
+let hintShown = true;
 function frame(now) {
   const dt = now - last;
   last = now;
   session.advance(dt);
+  // The start hint goes away for good once the user does anything to the board.
+  if (hintShown && (session.running || input.editing || session.canUndo || engine.generation > 0)) {
+    hintShown = false;
+    ui.hideHint();
+  }
   renderer.render();
   ui.update({
     running: session.running,
