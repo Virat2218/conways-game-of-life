@@ -23,6 +23,7 @@ const TOOL_TEXT = {
 };
 
 // Screen-reader announcements: rare while running, prompt-ish while paused.
+const CURSOR_SAY_MS = 250;
 const ANNOUNCE_RUNNING_MS = 5000;
 const ANNOUNCE_PAUSED_MS = 1000;
 
@@ -210,7 +211,11 @@ export class UI {
       body.append(actions);
 
       this.bindButton(load, () => this.actions.loadPattern(preset.id));
-      this.bindButton(stamp, () => this.actions.choosePattern(preset.id));
+      // A keyboard activation reports detail 0; it moves focus to the board.
+      stamp.addEventListener('click', (e) => {
+        this.actions.choosePattern(preset.id, { keyboard: e.detail === 0 });
+        if (e.detail > 0) stamp.blur();
+      });
       item.append(preview, body);
       this.el.library.append(item);
       this.libraryButtons.set(preset.id, item);
@@ -226,9 +231,10 @@ export class UI {
     for (const input of this.themeInputs) input.checked = input.value === preference;
   }
 
-  showStamp(name, id) {
+  showStamp(name, id, { keyboard = false } = {}) {
     const touch = window.matchMedia?.('(pointer: coarse)').matches;
-    this.el.toastText.textContent = `Placing ${name} — ${touch ? 'drag, then release to place.' : 'click the board to place.'}`;
+    const how = keyboard ? 'arrows move it, Enter places.' : touch ? 'drag, then release to place.' : 'click the board to place.';
+    this.el.toastText.textContent = `Placing ${name} — ${how}`;
     this.el.toast.hidden = false;
     this.markActivePattern(id);
     this.placing = name;
@@ -256,6 +262,8 @@ export class UI {
   }
 
   onKeyDown(e) {
+    // The board already handled this key (cursor movement, Enter).
+    if (e.defaultPrevented) return;
     // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z (or Ctrl+Y) redoes, except where the
     // browser's own text undo should win, and inside the Help dialog.
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -383,7 +391,15 @@ export class UI {
   }
 
   // Short message for screen readers, bypassing the throttled status updates.
+  // For rapid events such as holding an arrow key: only the last description,
+  // after a short pause, is spoken, and it also holds back the periodic counters.
+  sayLater(describe) {
+    clearTimeout(this.sayTimer);
+    this.sayTimer = setTimeout(() => this.say(describe()), CURSOR_SAY_MS);
+  }
+
   say(text) {
+    clearTimeout(this.sayTimer);
     // A repeat of the same words would not be re-read, so alternate a trailing space.
     this.sayFlip = !this.sayFlip;
     this.el.announcer.textContent = this.sayFlip ? text : `${text}\u00a0`;

@@ -17,6 +17,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 - A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
 - A visual Pattern library of eight classic presets (spaceships, oscillators, a gun and methuselahs), each with a miniature drawn from its own cells, a factual description, and two actions: **Load** (replace the board) and **Stamp** (add to it with a ghost preview, rotation and touch placement)
 - A fresh session opens on a paused, centred Gosper glider gun with a dismissible "Press Play to see it evolve" hint
+- Keyboard editing: Tab to the board, move a visible cursor with the arrow keys, toggle cells with Enter, and place patterns without a pointing device
 - Wheel, trackpad, pinch and −/+ button zoom with a live px/cell readout; drag panning; Fit board and Fit live cells; a status line stating the 256 × 160 wrapping board
 - A canvas-and-sidebar workspace that stacks on phones, with Play and Step pinned to the bottom edge
 - Light and dark themes with a Light / Dark / System switch that remembers your choice
@@ -27,7 +28,9 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | Action | Mouse / touch | Keyboard |
 | --- | --- | --- |
 | Play / pause | Play button (unavailable while a stroke or pattern placement is in progress) | <kbd>Space</kbd> |
-| Step one generation | Step button | <kbd>N</kbd> or <kbd>→</kbd> |
+| Step one generation | Step button | <kbd>N</kbd>, or <kbd>→</kbd> when the board is not focused |
+| Move the keyboard cursor | Tab to the board first. A ring marks the cell; the view follows it and it stays on the board (it does not wrap). | <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>, <kbd>Shift</kbd> for ten cells |
+| Toggle the cell under the cursor | Pauses the simulation; one undo step | <kbd>Enter</kbd> |
 | Draw cells | **Draw** tool (the default): drag to add cells, wherever the stroke starts. Editing pauses a running simulation and leaves it paused; press Play to resume. | — |
 | Erase cells | **Erase** tool: drag to remove cells, wherever the stroke starts | — |
 | Pan the view | **Pan** tool: drag with a mouse, pen or one finger. Cells are never changed. | Arrow keys in the tool group switch tools |
@@ -39,6 +42,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | Speed | Speed slider (1–120 gen/s) | Arrow keys on the slider |
 | Load a pattern | **Load** on a library card: pauses, cancels any stroke or placement in progress, replaces every cell, resets the generation to 0, makes the pattern the Restart seed and frames it. One undo step. | — |
 | Stamp a pattern | **Stamp** on a library card, then click the board (the board is kept) — or drag and release on touch. Placing is a temporary mode: your tool is back afterwards, and choosing another tool cancels it. | — |
+| Stamp from the keyboard | **Stamp** moves focus to the board with the ghost at the cursor; arrows move it, <kbd>Enter</kbd> places, <kbd>Esc</kbd> cancels and returns focus to the Stamp button | — |
 | Rotate pattern | Toast **Rotate** button | <kbd>R</kbd> |
 | Cancel | Toast **Cancel** button | <kbd>Esc</kbd> reverts the stroke in progress exactly, or cancels a pattern being placed; with nothing to cancel it pauses |
 | Zoom | Mouse wheel / trackpad / two-finger pinch | <kbd>+</kbd> / <kbd>−</kbd> |

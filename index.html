@@ -127,7 +127,8 @@
             </button>
           </div>
           <div class="stage">
-            <canvas id="board" aria-label="Game of Life board"></canvas>
+            <canvas id="board" tabindex="0" role="application" aria-label="Game of Life board" aria-describedby="board-keys"></canvas>
+            <p class="visually-hidden" id="board-keys">Arrow keys move the cursor, Shift plus an arrow moves ten cells, Enter toggles the cell under the cursor. Space plays or pauses, N steps one generation.</p>
             <div class="start-hint" id="start-hint">
               <span>Press <strong>Play</strong> to see it evolve.</span>
               <button type="button" class="start-hint-close" id="start-hint-close" aria-label="Dismiss hint">
@@ -144,7 +145,7 @@
             <div class="board-notes">
               <p class="hint">
                 <span id="hint-tool">Draw: drag to add cells.</span>
-                <span class="hint-fine">Right-drag or Shift-drag to pan · Scroll to zoom</span>
+                <span class="hint-fine">Right-drag or Shift-drag to pan · Scroll to zoom · Tab to the board for arrow-key editing</span>
                 <span class="hint-coarse">Pinch to zoom · Two fingers to pan</span>
               </p>
               <p class="board-status">
@@ -234,6 +235,15 @@
           </ul>
         </section>
         <section>
+          <h3>Edit with the keyboard</h3>
+          <ul>
+            <li><kbd>Tab</kbd> to the board. A ring marks the cursor cell; <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> move it (hold <kbd>Shift</kbd> for ten cells) and the view follows. The cursor stays on the board.</li>
+            <li><kbd>Enter</kbd> toggles the cell under the cursor. It pauses the simulation and is one undo step.</li>
+            <li>While the board has focus, <kbd>→</kbd> moves the cursor and does not step. Use <kbd>N</kbd> to step; <kbd>→</kbd> steps only when the board is not focused.</li>
+            <li><strong>Stamp</strong> from the keyboard moves focus to the board with the pattern at the cursor: arrows move it, <kbd>R</kbd> rotates, <kbd>Enter</kbd> places, <kbd>Esc</kbd> cancels and returns you to the Stamp button.</li>
+          </ul>
+        </section>
+        <section>
           <h3>Place a pattern</h3>
           <ul>
             <li><strong>Load</strong> in the Pattern library replaces the whole board (Undo brings it back). <strong>Stamp</strong> adds a pattern instead: click the board to place it. On a touch screen, drag to position it and release to place it.</li>
@@ -259,7 +269,7 @@
         <section>
           <h3>Playback</h3>
           <ul>
-            <li><kbd>Space</kbd> plays or pauses, <kbd>N</kbd> or <kbd>→</kbd> steps one generation, <kbd>C</kbd> clears the board.</li>
+            <li><kbd>Space</kbd> plays or pauses, <kbd>N</kbd> steps one generation (<kbd>→</kbd> too, unless the board has focus), <kbd>C</kbd> clears the board.</li>
             <li>Randomize fills the board about a quarter full and restarts the generation count.</li>
           </ul>
         </section>

@@ -93,3 +93,16 @@ test('the renderer fallback palette matches the light theme', () => {
   assert.equal(normalize(DEFAULT_COLORS.hover), normalize(light.hover));
   assert.equal(normalize(DEFAULT_COLORS.ghost), normalize(light.ghost));
 });
+
+test('the keyboard cursor is visible on the board and on live cells in both themes, and defined for both', () => {
+  for (const [name, theme] of [['light', light], ['dark', dark]]) {
+    assert.ok(contrast(theme.cursor, theme.board) >= 3, `${name}: cursor on an empty cell`);
+    assert.ok(contrast(theme['cursor-halo'], theme.cell) >= 3, `${name}: halo against a live cell`);
+    assert.ok(contrast(theme.cursor, theme['cursor-halo']) >= 3, `${name}: the two ring colours differ clearly`);
+    assert.ok(contrast(theme.cursor, theme['board-background']) >= 3, `${name}: cursor beyond the board edge`);
+  }
+  assert.notEqual(light.cursor, dark.cursor);
+  const normalize = (v) => v.replace(/\s+/g, '').toLowerCase();
+  assert.equal(normalize(DEFAULT_COLORS.cursor), normalize(light.cursor));
+  assert.equal(normalize(DEFAULT_COLORS.cursorHalo), normalize(light['cursor-halo']));
+});

@@ -17,7 +17,8 @@ export function setup({ width = 24, height = 16, scale = 1 } = {}) {
     releasePointerCapture: (id) => captured.delete(id),
     hasPointerCapture: (id) => captured.has(id),
   };
-  const log = { ghosts: [], zooms: [], pans: 0, hovers: [] };
+  const listeners = [];
+  const log = { ghosts: [], zooms: [], pans: 0, hovers: [], cursors: [], reveals: [] };
   const renderer = {
     cellCss: 8,
     zoomIndex: 4,
@@ -27,7 +28,13 @@ export function setup({ width = 24, height = 16, scale = 1 } = {}) {
       return cx >= 0 && cy >= 0 && cx < width && cy < height ? { x: cx, y: cy } : null;
     },
     clientToWorld: (x, y) => ({ x: x / scale, y: y / scale }),
+    onChange: (fn) => {
+      listeners.push(fn);
+    },
     setHover: (cell) => log.hovers.push(cell),
+    setCursor: (cell) => log.cursors.push(cell),
+    revealCell: (x, y) => log.reveals.push({ x, y }),
+    centerCell: () => ({ x: Math.floor(width / 2), y: Math.floor(height / 2) }),
     setGhost: (cells) => log.ghosts.push(cells),
     panBy: () => log.pans++,
     setZoom: (index) => log.zooms.push(`zoom:${index}`),
@@ -49,6 +56,20 @@ export function setup({ width = 24, height = 16, scale = 1 } = {}) {
     down: (x, y, e) => fire('pointerdown', { clientX: x, clientY: y, ...e }),
     move: (x, y, e) => fire('pointermove', { clientX: x, clientY: y, ...e }),
     up: (x, y, e) => fire('pointerup', { clientX: x, clientY: y, ...e }),
+    // Returns the event so a test can see whether it was handled (default prevented).
+    key: (key, e = {}) => {
+      const event = { key, repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, defaultPrevented: false, ...e };
+      event.preventDefault = () => {
+        event.defaultPrevented = true;
+      };
+      handlers.keydown(event);
+      return event;
+    },
+    // Any change to the view (zoom, fit, resize), as the real renderer announces it.
+    viewChanged: () => listeners.forEach((fn) => fn()),
+    leave: () => handlers.pointerleave({ pointerType: 'mouse' }),
+    focus: () => handlers.focus({}),
+    blur: () => handlers.blur({}),
     wheel: (deltaY) => fire('wheel', { deltaY, deltaMode: 0, timeStamp: 1000, clientX: 3, clientY: 3 }),
   };
 }

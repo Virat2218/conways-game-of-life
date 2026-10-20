@@ -50,6 +50,10 @@ export function line(x0, y0, x1, y1) {
 
 export const TOOLS = ['draw', 'erase', 'pan'];
 
+const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+// Shift+arrow moves the keyboard cursor this many cells at once.
+export const BIG_STEP = 10;
+
 export class Input {
   constructor(canvas, renderer, engine) {
     this.canvas = canvas;
@@ -77,6 +81,13 @@ export class Input {
     // After a pinch, ignore the remaining finger until every touch lifts.
     this.touchLocked = false;
     this.wheel = { acc: 0, time: 0 };
+    // Logical cell {x, y} the keyboard acts on. It is drawn only while the
+    // board has keyboard focus (cursorShown), and always stays on the board.
+    this.cursor = null;
+    this.cursorShown = false;
+    // onCursor(cell) after the cursor moves; onCellToggle(cell, alive) after Enter toggles one.
+    this.onCursor = null;
+    this.onCellToggle = null;
 
     canvas.addEventListener('pointerdown', (e) => this.handleDown(e));
     canvas.addEventListener('pointermove', (e) => this.handleMove(e));
@@ -84,8 +95,15 @@ export class Input {
     canvas.addEventListener('pointercancel', (e) => this.handleUp(e, true));
     canvas.addEventListener('pointerleave', (e) => {
       this.renderer.setHover(null);
-      if (this.stamp && e.pointerType !== 'touch') this.updateGhost(null);
+      if (this.stamp && e.pointerType !== 'touch' && !this.stamp.viaKeyboard) this.updateGhost(null);
     });
+    canvas.addEventListener('keydown', (e) => this.handleKey(e));
+    canvas.addEventListener('focus', () => this.handleFocus());
+    canvas.addEventListener('blur', () => this.hideCursor());
+    // Whatever moves the view (keyboard zoom, Fit, a resize) must not strand a
+    // shown cursor off-screen. Pointer input hides the cursor first (see handleDown
+    // and onWheel), so this never fights a mouse or touch pan or zoom.
+    renderer.onChange?.(() => this.revealCursor());
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
@@ -121,9 +139,108 @@ export class Input {
     return false;
   }
 
+  // --- Keyboard ------------------------------------------------------------
+
+  // Arrows move the cursor (or the pattern being placed) and Enter toggles the
+  // cell or places the pattern. Returns whether the key was handled; a handled
+  // key has its default prevented, which keeps the page-level shortcuts from
+  // also acting on it (ArrowRight must not step the simulation as well).
+  handleKey(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return false;
+    const arrow = ARROWS[e.key];
+    if (!arrow && e.key !== 'Enter') return false;
+    e.preventDefault();
+    // A pointer gesture owns the board until it ends.
+    if (this.stroke || this.pan || this.pinch || this.stamp?.pointerId != null) return true;
+    if (arrow) {
+      const n = e.shiftKey ? BIG_STEP : 1;
+      this.moveCursor(arrow[0] * n, arrow[1] * n);
+    } else if (!e.repeat) {
+      this.activateCursor();
+    }
+    return true;
+  }
+
+  handleFocus() {
+    // Pointer focus (a click) keeps the mouse outline; only keyboard focus shows the cursor.
+    if (this.canvas.matches && !this.canvas.matches(':focus-visible')) return;
+    this.showCursor();
+    this.onCursor?.(this.cursor);
+  }
+
+  showCursor() {
+    if (!this.cursor) this.cursor = this.renderer.centerCell();
+    this.cursorShown = true;
+    this.renderer.setCursor(this.cursor);
+    this.renderer.revealCell(this.cursor.x, this.cursor.y);
+  }
+
+  // After the view changes under a shown cursor, keep it visible.
+  revealCursor() {
+    // revealCell announces the view change it makes, which arrives back here.
+    if (this.revealing || !this.cursorShown || !this.cursor) return;
+    this.revealing = true;
+    try {
+      this.renderer.revealCell(this.cursor.x, this.cursor.y);
+    } finally {
+      this.revealing = false;
+    }
+  }
+
+  hideCursor() {
+    this.cursorShown = false;
+    this.renderer.setCursor(null);
+  }
+
+  moveCursor(dx, dy) {
+    if (!this.cursor) this.cursor = this.renderer.centerCell();
+    this.cursor = {
+      x: Math.min(this.engine.width - 1, Math.max(0, this.cursor.x + dx)),
+      y: Math.min(this.engine.height - 1, Math.max(0, this.cursor.y + dy)),
+    };
+    this.showCursor();
+    if (this.stamp) {
+      this.stamp.viaKeyboard = true;
+      this.updateGhost(this.cursor);
+    }
+    this.onCursor?.(this.cursor);
+  }
+
+  // Enter: place the pending pattern, or toggle the cell under the cursor.
+  // Like a stroke, a toggle pauses the simulation first and is one undo step.
+  activateCursor() {
+    if (this.stamp) {
+      if (!this.stamp.cell && this.cursor) this.updateGhost(this.cursor);
+      this.placeStamp();
+      return;
+    }
+    if (!this.cursor) this.cursor = this.renderer.centerCell();
+    this.showCursor();
+    const { x, y } = this.cursor;
+    const alive = this.engine.get(x, y) ? 0 : 1;
+    this.onEditStart?.();
+    this.onTransaction?.('begin');
+    this.engine.set(x, y, alive);
+    this.onTransaction?.('commit', { label: alive ? 'Add cell' : 'Remove cell' });
+    this.onCellToggle?.(this.cursor, alive);
+  }
+
+  // Arms a pattern with its ghost at the keyboard cursor.
+  stampAtCursor() {
+    if (!this.stamp) return;
+    if (!this.cursor) this.cursor = this.renderer.centerCell();
+    this.stamp.viaKeyboard = true;
+    this.updateGhost(this.cursor);
+    this.renderer.revealCell(this.cursor.x, this.cursor.y);
+  }
+
   // --- Gesture routing -----------------------------------------------------
 
   handleDown(e) {
+    // The next keyboard use starts from where the pointer last pressed.
+    const pressed = this.renderer.screenToCell(e.clientX, e.clientY);
+    if (pressed) this.cursor = pressed;
+    if (this.cursorShown) this.hideCursor();
     if (e.pointerType === 'touch') {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.touches.size === 2) {
@@ -237,6 +354,8 @@ export class Input {
 
   onWheel(e) {
     e.preventDefault();
+    // The pointer is in charge of the view now; the keyboard cursor reappears on the next arrow key.
+    if (this.cursorShown) this.hideCursor();
     const steps = wheelSteps(this.wheel, e.deltaY, e.deltaMode, e.timeStamp);
     if (steps) this.renderer.zoomBy(steps, e.clientX, e.clientY);
   }
@@ -246,7 +365,7 @@ export class Input {
   setStamp(pattern) {
     if (this.stroke) this.revertStroke();
     if (pattern) this.onEditStart?.();
-    this.stamp = pattern ? { pattern, pointerId: null, cell: null } : null;
+    this.stamp = pattern ? { pattern, pointerId: null, cell: null, viaKeyboard: false } : null;
     this.renderer.setHover(null);
     // The ghost appears once the pointer is over the board.
     this.renderer.setGhost(null);
@@ -357,6 +476,7 @@ export class Input {
     if (this.stamp) {
       const dragging = this.stamp.pointerId !== null;
       if (dragging ? e.pointerId === this.stamp.pointerId : e.pointerType !== 'touch') {
+        this.stamp.viaKeyboard = false;
         this.updateGhost(this.cellAt(e.clientX, e.clientY));
       }
       return;

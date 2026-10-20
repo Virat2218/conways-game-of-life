@@ -12,6 +12,8 @@ const THEME_VARS = {
   gridMajor: '--grid-major',
   hover: '--hover',
   ghost: '--ghost',
+  cursor: '--cursor',
+  cursorHalo: '--cursor-halo',
 };
 
 export function normalizePreference(value) {
