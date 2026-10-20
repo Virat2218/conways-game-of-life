@@ -1,4 +1,5 @@
 import { Engine, Clock } from './engine.js';
+import { Session } from './session.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
 import { UI } from './ui.js';
@@ -29,35 +30,28 @@ const theme = createThemeController({
   onChange: () => renderer.setColors(readThemeColors()),
 });
 
-let running = false;
-
-function setRunning(value) {
-  running = value;
-  clock.reset();
-}
+// Owns play state and decides when the board may change. Editing pauses the
+// simulation (below) and Play/Step stay unavailable until the edit ends.
+const session = new Session({
+  engine,
+  clock,
+  isEditing: () => input.editing,
+  isStroking: () => input.stroke !== null,
+});
+input.onEditStart = () => session.pause();
 
 const ui = new UI(document, {
-  togglePlay: () => setRunning(!running),
-  step: () => {
-    setRunning(false);
-    engine.step();
-  },
-  clear: () => {
-    setRunning(false);
-    engine.clear();
-  },
-  randomize: () => engine.randomize(0.25),
+  togglePlay: () => session.togglePlay(),
+  step: () => session.step(),
+  clear: () => session.clear(),
+  randomize: () => session.randomize(0.25),
   fit: () => renderer.fit(),
   zoomIn: () => renderer.zoomBy(1),
   zoomOut: () => renderer.zoomBy(-1),
   escape: () => {
-    if (input.stamp) input.cancelStamp();
-    else if (input.stroke) input.revertStroke();
-    else setRunning(false);
+    if (!input.cancelEdit()) session.pause();
   },
-  setSpeed: (value) => {
-    clock.speed = value;
-  },
+  setSpeed: (value) => session.setSpeed(value),
   choosePattern: (id) => {
     const preset = getPreset(id);
     if (!preset) return;
@@ -89,11 +83,14 @@ let last = performance.now();
 function frame(now) {
   const dt = now - last;
   last = now;
-  if (running) {
-    for (let n = clock.advance(dt); n > 0; n--) engine.step();
-  }
+  session.advance(dt);
   renderer.render();
-  ui.update({ running, generation: engine.generation, population: engine.population });
+  ui.update({
+    running: session.running,
+    editing: input.editing,
+    generation: engine.generation,
+    population: engine.population,
+  });
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

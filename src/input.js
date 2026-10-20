@@ -57,6 +57,9 @@ export class Input {
     // { pattern, pointerId, cell } while a preset is waiting to be placed.
     this.stamp = null;
     this.onStampEnd = null;
+    // Called before the first change of a stroke and before a pattern is
+    // armed, so the owner can pause the simulation first.
+    this.onEditStart = null;
     // { pointerId, x, y } while right-, middle- or shift-dragging the view.
     this.pan = null;
     // Active touch points by pointerId -> { x, y }.
@@ -77,6 +80,25 @@ export class Input {
     });
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // True while a stroke is being drawn or a pattern is waiting to be placed.
+  get editing() {
+    return this.stroke !== null || this.stamp !== null;
+  }
+
+  // Escape: abandon the stroke or pattern in progress. Returns false when there
+  // was nothing to cancel.
+  cancelEdit() {
+    if (this.stamp) {
+      this.cancelStamp();
+      return true;
+    }
+    if (this.stroke) {
+      this.revertStroke();
+      return true;
+    }
+    return false;
   }
 
   // --- Gesture routing -----------------------------------------------------
@@ -190,6 +212,7 @@ export class Input {
 
   setStamp(pattern) {
     if (this.stroke) this.revertStroke();
+    if (pattern) this.onEditStart?.();
     this.stamp = pattern ? { pattern, pointerId: null, cell: null } : null;
     this.renderer.setHover(null);
     // The ghost appears once the pointer is over the board.
@@ -281,6 +304,7 @@ export class Input {
     const cell = this.renderer.screenToCell(e.clientX, e.clientY);
     if (!cell) return;
     e.preventDefault();
+    this.onEditStart?.();
     this.canvas.setPointerCapture(e.pointerId);
     this.stroke = {
       pointerId: e.pointerId,
