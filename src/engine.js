@@ -129,4 +129,32 @@ export class Engine {
     this.generation = 0;
     this.version++;
   }
+
+  // An independent copy of the board that restore() can put back exactly.
+  snapshot() {
+    return { cells: this.cells.slice(), generation: this.generation, population: this.population };
+  }
+
+  // Replaces the board with a snapshot (or any {cells, generation}). The
+  // population is recounted rather than trusted, so it can never disagree
+  // with the cells.
+  restore({ cells, generation }) {
+    if (!(cells?.length === this.cells.length)) throw new RangeError('snapshot does not match the board size');
+    let population = 0;
+    for (let i = 0; i < cells.length; i++) {
+      const alive = cells[i] ? 1 : 0;
+      this.cells[i] = alive;
+      population += alive;
+    }
+    this.population = population;
+    this.generation = generation;
+    this.version++;
+  }
+
+  // Whether the board is exactly the snapshot (same cells and generation).
+  matches({ cells, generation }) {
+    if (generation !== this.generation || cells.length !== this.cells.length) return false;
+    for (let i = 0; i < cells.length; i++) if (cells[i] !== this.cells[i]) return false;
+    return true;
+  }
 }
