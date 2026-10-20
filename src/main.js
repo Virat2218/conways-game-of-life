@@ -60,11 +60,15 @@ const ui = new UI(document, {
   },
   rotate: () => input.rotateStamp(),
   setTheme: (preference) => theme.setPreference(preference),
+  setTool: (tool) => input.setTool(tool),
 });
 
 ui.setThemePreference(theme.preference);
 
 input.onStampEnd = () => ui.hideStamp();
+input.onToolChange = (tool) => ui.showTool(tool);
+ui.showTool(input.tool);
+ui.setBoardSize(engine.width, engine.height);
 
 engine.randomize(0.25);
 

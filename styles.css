@@ -290,9 +290,75 @@ kbd {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 12px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.tool-label {
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Draw / Erase / Pan: a segmented radio group, like the theme switch. */
+.tool-group {
+  display: inline-flex;
+  gap: 2px;
+  min-width: 0;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-2);
+}
+
+.tool-option {
+  position: relative;
+  display: block;
+}
+
+.tool-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tool-face {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: calc(var(--tap) - 8px);
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.tool-option:hover .tool-face {
+  color: var(--fg);
+}
+
+.tool-option input:checked + .tool-face {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.tool-option input:focus-visible + .tool-face {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* While a pattern is being placed the tool is on hold, not changed. */
+.tool-group[data-placing="true"] .tool-option input:checked + .tool-face {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  color: var(--fg);
 }
 
 .stage {
@@ -314,6 +380,10 @@ kbd {
 
 #board:focus-visible {
   outline-offset: -3px;
+}
+
+#board[data-tool="pan"] {
+  cursor: grab;
 }
 
 #board.panning {
@@ -343,6 +413,11 @@ kbd {
 @media (pointer: coarse) {
   .hint-fine,
   .kbd-hint {
+    display: none;
+  }
+
+  /* The line under the board names the tool and the pending pattern. */
+  .tool-label {
     display: none;
   }
 
@@ -752,9 +827,39 @@ kbd {
   .theme-face {
     min-height: var(--tap);
   }
+
+  .tool-group {
+    padding: 2px;
+  }
+
+  .tool-face {
+    min-height: var(--tap);
+  }
 }
 
 @media (max-width: 440px) {
+  /* Tools get a full-width row; Fit board and Help share the next one. */
+  .tool-group {
+    width: 100%;
+  }
+
+  .tool-option {
+    flex: 1;
+  }
+
+  .tool-face {
+    justify-content: center;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+
+  #fit,
+  #help-open {
+    flex: 1;
+  }
+
   /* Keep the status pill and the theme switch on one row; the labels stay. */
   .theme-face .icon {
     display: none;
@@ -819,4 +924,75 @@ kbd {
   .speed {
     margin-top: 16px;
   }
+}
+
+/* --- Help dialog --------------------------------------------------------- */
+
+.help {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(680px, calc(100vh - 32px));
+  max-height: min(680px, calc(100dvh - 32px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 20px 60px var(--shadow);
+  overflow: hidden;
+}
+
+.help[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.help::backdrop {
+  background: rgba(8, 10, 9, 0.6);
+}
+
+.help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-head h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.help-body {
+  padding: 4px 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.help-body section {
+  margin-top: 14px;
+}
+
+.help-body h3 {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font: 600 11px/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.help-body ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.help-body li::marker {
+  color: var(--muted);
+}
+
+.help-body p {
+  margin: 0;
 }
