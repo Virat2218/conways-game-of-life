@@ -79,3 +79,21 @@ test('RLE that ends before its terminator is refused, never loaded as a partial 
   assert.deepEqual(parseRLE('3o!').cells, [[0, 0], [1, 0], [2, 0]]);
   assert.deepEqual(parseRLE('x = 3, y = 3\nbo$2bo$3o!\nignored after the terminator').cells, getPreset('glider').cells);
 });
+
+test('cells beyond the size the RLE header declares are refused, but a larger declared size is fine', () => {
+  for (const text of ['x = 1, y = 1\n2o!', 'x = 3, y = 1\nbo$bo!', 'x = 2, y = 2\nbo$2bo$3o!', 'x = 3, y = 3\n3o$3o$3o$o!']) {
+    assert.equal(code(() => parseRLE(text)), 'dimensions', JSON.stringify(text));
+  }
+  assert.deepEqual(parseRLE('x = 3, y = 3\nbo$2bo$3o!').cells, getPreset('glider').cells, 'exact declaration');
+  assert.deepEqual(parseRLE('x = 10, y = 10\n3o!').cells, [[0, 0], [1, 0], [2, 0]], 'a roomier declaration is allowed');
+  assert.deepEqual(parseRLE('3o!').cells.length, 3, 'no header, nothing to check against');
+});
+
+test('dead runs and row ends past the board are refused even when no live cell follows', () => {
+  for (const text of ['o160$!', 'o256b!', 'o300$!', 'o999999b!', 'o$'.repeat(LIMITS.maxHeight) + '!']) {
+    assert.equal(code(() => parseRLE(text)), 'dimensions', text.slice(0, 20));
+  }
+  assert.doesNotThrow(() => parseRLE(`o${LIMITS.maxWidth - 1}b!`), 'right up to the edge is fine');
+  assert.doesNotThrow(() => parseRLE(`o${LIMITS.maxHeight - 1}$!`), 'down to the last row is fine');
+  assert.doesNotThrow(() => parseRLE(`${'o$'.repeat(LIMITS.maxHeight - 1)}o!`), 'exactly 160 rows is fine');
+});

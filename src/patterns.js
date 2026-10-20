@@ -165,12 +165,15 @@ const RLE_HEADER = /^\s*x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)\s*(?:,\s*rule\s*=\s*(\
 export function parseRLE(text, limits = LIMITS) {
   checkSize(text, limits);
   const bodyLines = [];
+  // Width and height the header claims; the cells may not go beyond them.
+  let declared = null;
   for (const line of text.split(/\r?\n/)) {
     if (line.startsWith('#')) continue;
     const header = RLE_HEADER.exec(line);
     if (header) {
       if (Number(header[1]) > limits.maxWidth || Number(header[2]) > limits.maxHeight) throw dimensionError(limits);
       if (header[3] !== undefined) checkRule(header[3]);
+      declared = { width: Number(header[1]), height: Number(header[2]) };
       continue;
     }
     if (/^\s*x\s*=/i.test(line)) throw new ParseError('Unreadable RLE header.', 'syntax');
@@ -192,14 +195,20 @@ export function parseRLE(text, limits = LIMITS) {
     count = '';
     if (ch === 'b' || ch === '.') {
       x += n;
+      // A dead run past the board is just as much a sign of damage as a live one.
+      if (x > limits.maxWidth) throw dimensionError(limits);
     } else if (ch === 'o' || ch === 'A') {
       if (x + n > limits.maxWidth || y >= limits.maxHeight) throw dimensionError(limits);
+      if (declared && (x + n > declared.width || y >= declared.height)) {
+        throw new ParseError(`The cells go beyond the size the header declares (x = ${declared.width}, y = ${declared.height}).`, 'dimensions');
+      }
       if (cells.length + n > limits.maxCells) throw cellError(limits);
       for (let i = 0; i < n; i++) cells.push([x + i, y]);
       x += n;
     } else if (ch === '$') {
       y += n;
       x = 0;
+      if (y >= limits.maxHeight) throw dimensionError(limits);
     } else if (ch === '!') {
       terminated = true;
       break;
