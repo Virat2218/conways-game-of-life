@@ -45,6 +45,7 @@
       <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3.8 12a8.2 8.2 0 1 0 2.6-6" /><path d="M3.6 4.4v4.2h4.2" /></symbol>
       <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" /></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6" /></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
     </svg>
 
@@ -121,10 +122,16 @@
               <button type="button" class="btn" id="fit" aria-label="Fit board" title="Show the whole board (F)">Board</button>
               <button type="button" class="btn" id="fit-live" aria-label="Fit live cells" title="Zoom to the live cells">Live cells</button>
             </div>
-            <button type="button" class="btn" id="help-open" aria-haspopup="dialog" title="How to use the board">
-              <svg class="icon" aria-hidden="true"><use href="#i-help" /></svg>
-              <span>Help</span>
-            </button>
+            <div class="toolbar-group toolbar-end">
+              <button type="button" class="btn" id="share-open" aria-haspopup="dialog" title="Save, load, import, export and share">
+                <svg class="icon" aria-hidden="true"><use href="#i-share" /></svg>
+                <span>Share &amp; save</span>
+              </button>
+              <button type="button" class="btn" id="help-open" aria-haspopup="dialog" title="How to use the board">
+                <svg class="icon" aria-hidden="true"><use href="#i-help" /></svg>
+                <span>Help</span>
+              </button>
+            </div>
           </div>
           <div class="stage">
             <canvas id="board" tabindex="0" role="application" aria-label="Game of Life board" aria-describedby="board-keys"></canvas>
@@ -220,6 +227,73 @@
       </footer>
     </div>
 
+    <dialog class="help share" id="share" aria-labelledby="share-title">
+      <div class="help-head">
+        <h2 id="share-title">Share &amp; save</h2>
+        <button type="button" class="btn" id="share-close">Close</button>
+      </div>
+      <div class="help-body share-body">
+        <p class="share-message" id="share-message" role="status"></p>
+        <p class="share-message share-error" id="share-error" role="alert" hidden></p>
+
+        <div data-view="menu">
+          <section>
+            <h3>On this device</h3>
+            <p class="share-note" id="share-saved">Nothing saved yet.</p>
+            <div class="share-actions">
+              <button type="button" class="btn" id="share-save">Save board</button>
+              <button type="button" class="btn" id="share-load-saved">Load saved setup</button>
+            </div>
+            <p class="share-note">One slot, in this browser only. It keeps the cells, the generation and the Restart seed.</p>
+          </section>
+          <section>
+            <h3>Files and links</h3>
+            <div class="share-actions">
+              <button type="button" class="btn" id="share-export">Export RLE</button>
+              <button type="button" class="btn" id="share-import">Import…</button>
+              <button type="button" class="btn" id="share-link">Copy share link</button>
+            </div>
+            <div class="share-fallback" id="share-link-fallback" hidden>
+              <label for="share-link-field">Share link (select it and copy)</label>
+              <input type="text" id="share-link-field" readonly spellcheck="false" />
+            </div>
+            <p class="share-note">Export and links carry the live cells only, not the generation or history. A link has to fit in 2,000 characters; bigger patterns can be exported as a file. Nothing is uploaded anywhere.</p>
+          </section>
+        </div>
+
+        <div data-view="import" hidden>
+          <section>
+            <h3>Import a pattern</h3>
+            <label class="share-label" for="import-file">RLE or plaintext file (up to 256 KiB)</label>
+            <input type="file" id="import-file" accept=".rle,.cells,.txt,text/plain" />
+            <label class="share-label" for="import-text">Or paste it here</label>
+            <textarea id="import-text" rows="8" spellcheck="false" autocomplete="off"></textarea>
+            <div class="share-actions">
+              <button type="button" class="btn btn-primary" id="import-review">Review</button>
+              <button type="button" class="btn" id="import-back">Back</button>
+            </div>
+            <p class="share-note">Patterns up to 256 × 160 cells in Conway's rule (B3/S23). Nothing changes until you confirm.</p>
+          </section>
+        </div>
+
+        <div data-view="review" hidden>
+          <section>
+            <h3 id="review-title">Import</h3>
+            <div class="review-card">
+              <svg class="pattern-preview" id="review-preview" aria-hidden="true" focusable="false"></svg>
+              <p class="share-note" id="review-meta"></p>
+            </div>
+            <div class="share-actions">
+              <button type="button" class="btn btn-primary" id="review-load">Load on clean board</button>
+              <button type="button" class="btn" id="review-stamp">Stamp onto board</button>
+              <button type="button" class="btn" id="review-cancel">Cancel</button>
+            </div>
+            <p class="share-note"><strong>Load</strong> replaces everything on the board (Undo brings it back). <strong>Stamp</strong> keeps the board and lets you place the pattern.</p>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="help" id="help" aria-labelledby="help-title">
       <div class="help-head">
         <h2 id="help-title">How to use the board</h2>
@@ -241,6 +315,14 @@
             <li><kbd>Enter</kbd> toggles the cell under the cursor. It pauses the simulation and is one undo step.</li>
             <li>While the board has focus, <kbd>→</kbd> moves the cursor and does not step. Use <kbd>N</kbd> to step; <kbd>→</kbd> steps only when the board is not focused.</li>
             <li><strong>Stamp</strong> from the keyboard moves focus to the board with the pattern at the cursor: arrows move it, <kbd>R</kbd> rotates, <kbd>Enter</kbd> places, <kbd>Esc</kbd> cancels and returns you to the Stamp button.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Save, import and share</h3>
+          <ul>
+            <li><strong>Share &amp; save</strong> opens a panel. <strong>Save board</strong> keeps one setup in this browser (cells, generation and the Restart seed); <strong>Load saved setup</strong> brings it back and pauses, as one undo step.</li>
+            <li><strong>Export RLE</strong> downloads the live cells. <strong>Import…</strong> reads an RLE or plaintext file or pasted text, checks all of it, and only then asks whether to <strong>Load</strong> it on a clean board or <strong>Stamp</strong> it. Bad input is refused and the board stays as it was.</li>
+            <li><strong>Copy share link</strong> puts the live cells in the link itself (limit 2,000 characters). Opening such a link asks before anything changes.</li>
           </ul>
         </section>
         <section>

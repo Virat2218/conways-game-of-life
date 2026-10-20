@@ -16,6 +16,7 @@
   --accent: #176b2e;
   --accent-ink: #ffffff;
   --focus: #176b2e;
+  --danger: #b3261e;
   --track: #8a948c;
   --shadow: rgba(20, 30, 22, 0.1);
 
@@ -47,6 +48,7 @@
   --accent: #c3f56b;
   --accent-ink: #111315;
   --focus: #c3f56b;
+  --danger: #ff8a80;
   --track: #6b736e;
   --shadow: rgba(0, 0, 0, 0.5);
 
@@ -332,6 +334,13 @@ kbd {
   color: var(--muted);
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* The line under the board says the same; drop the label when the toolbar is tight. */
+@media (max-width: 1599px) {
+  .tool-label {
+    display: none;
+  }
 }
 
 /* Draw / Erase / Pan: a segmented radio group, like the theme switch. */
@@ -878,9 +887,16 @@ kbd {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The controls above and the notes below take what they need; the board itself
+     gets a height of its own instead of whatever is left of a fixed panel. */
   .board-panel {
-    height: clamp(340px, 58vh, 720px);
-    height: clamp(340px, 58dvh, 720px);
+    height: auto;
+  }
+
+  .stage {
+    flex: none;
+    height: clamp(260px, 44vh, 560px);
+    height: clamp(260px, 44dvh, 560px);
   }
 
   .sidebar {
@@ -937,8 +953,26 @@ kbd {
     display: none;
   }
 
-  #help-open {
-    flex: 1;
+  /* Share & save and Help become icon-only so the toolbar keeps its three rows
+     and the board keeps its height; their text stays for screen readers. */
+  .group-caption {
+    display: none;
+  }
+
+  .toolbar-end .btn {
+    flex: none;
+    justify-content: center;
+    width: var(--tap);
+    padding: 0;
+  }
+
+  .toolbar-end .btn span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   /* Keep the status pill and the theme switch on one row; the labels stay. */
@@ -969,11 +1003,6 @@ kbd {
 
   .theme-face {
     padding: 0 10px;
-  }
-
-  .board-panel {
-    height: clamp(300px, 50vh, 520px);
-    height: clamp(300px, 50dvh, 520px);
   }
 
   .board-footer {
@@ -1094,6 +1123,7 @@ kbd {
   gap: 4px;
   max-width: calc(100% - 24px);
   padding: 4px 4px 4px 14px;
+  white-space: nowrap;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--panel);
@@ -1126,4 +1156,101 @@ kbd {
 .start-hint-close .icon {
   width: 16px;
   height: 16px;
+}
+
+/* --- Share & save dialog ------------------------------------------------- */
+
+.share-body section {
+  margin-top: 14px;
+}
+
+.share-message {
+  min-height: 1.4em;
+  margin: 12px 0 0;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.share-message:empty {
+  display: none;
+}
+
+.share-error {
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.share-error[hidden] {
+  display: none;
+}
+
+.share-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.share-actions .btn {
+  min-height: var(--tap);
+}
+
+.share-label {
+  display: block;
+  margin: 12px 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.share-body input[type="file"],
+.share-body input[type="text"],
+.share-body textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--fg);
+  font: 13px/1.4 var(--font-mono);
+}
+
+.share-body textarea {
+  resize: vertical;
+}
+
+.share-fallback {
+  margin-top: 10px;
+}
+
+.share-fallback label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.review-card {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.review-card .pattern-preview {
+  width: 96px;
+  height: 96px;
+}
+
+.review-card .share-note {
+  margin: 0;
 }

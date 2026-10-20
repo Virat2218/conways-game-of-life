@@ -16,10 +16,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added − / + zoom buttons with a px/cell readout (disabled at the limits), a Live cells fit that frames the living cells with a margin (or the whole board when empty), and a permanent "256 × 160 · Wrapping edges" status line.
 - The Pattern library shows a miniature, category and short factual description for each preset, with separate **Load** (clean board, paused at generation 0, becomes the Restart seed, one undo step) and **Stamp** (keeps the board, ghost preview, rotation, touch placement) actions. A new session opens on a centred, paused Gosper glider gun with a dismissible start hint instead of a random board; Randomize is still available.
 - The board can be edited from the keyboard: it is focusable, arrows move a visible cursor (Shift moves ten cells; it clamps at the edges and the view follows), Enter toggles the cell as one undoable step, and Stamp from the keyboard places a pattern with arrows, R, Enter and Esc. While the board has focus ArrowRight moves the cursor instead of stepping (N still steps, and ArrowRight steps elsewhere). Cursor moves are announced once after a short pause; the toggle result is announced at once.
+- Added a **Share & save** dialog: save and load one setup in the browser (versioned schema: cells, generation, Restart seed; the theme preference stays separate), RLE export, RLE/plaintext import from a file or pasted text with an explicit **Load** or **Stamp** choice after validation, and a copy-able share link (`#pattern=v1.…`, whole link at most 2,000 characters, with a selectable fallback when the clipboard is blocked). Opening a link asks before anything changes. Storage failures, damaged or newer saves, oversized files and unsupported rules are reported and never alter the board.
+
+### Security
+
+- The plaintext and RLE parsers now refuse input over 256 KiB, patterns larger than the 256 × 160 board, absurd run lengths and more cells than the board holds, and reject any rule other than B3/S23 instead of silently running it as Conway's.
 
 ### Fixed
 
 - Rotating a pattern before placing it dropped its name, so the undo step was labelled "Place undefined".
+- A keyboard **Stamp onto board** from the import dialog no longer loses focus to the Share button; loading a saved setup that differs from the board only in its Restart seed is now an undoable step; RLE text that ends before its `!`, that goes beyond the size its own header declares, or that has a dead run or row end past the board is refused instead of loading.
+- On phones the board was squeezed to roughly 120 px tall between the toolbar and the notes; it now has a height of its own (about 44% of the viewport, at least 260 px).
 
 ## [1.0.0] - 2026-10-18
 

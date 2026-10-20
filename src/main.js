@@ -5,6 +5,8 @@ import { Input } from './input.js';
 import { UI } from './ui.js';
 import { createThemeController, readThemeColors } from './theme.js';
 import { getPreset, centerOrigin } from './patterns.js';
+import { Transfer } from './transfer.js';
+import { ShareDialog } from './share.js';
 
 const canvas = document.getElementById('board');
 const engine = new Engine();
@@ -63,6 +65,20 @@ function zoom(steps) {
   else ui.say(steps > 0 ? 'Already at the maximum zoom' : 'Already at the minimum zoom');
 }
 
+// Arms a pattern for placing. From the keyboard the whole placement can be done
+// without a pointer; Esc goes back to the control that started it.
+function armStamp(pattern, { keyboard = false, returnTo = document.activeElement } = {}) {
+  input.setStamp(pattern);
+  stampName = pattern.name;
+  ui.showStamp(pattern.name, pattern.id, { keyboard });
+  if (keyboard) {
+    stampReturnFocus = returnTo;
+    input.stampAtCursor();
+    canvas.focus();
+    ui.say(`Placing ${pattern.name} at ${describeCell(input.cursor)}. Arrow keys move it, R rotates, Enter places, Escape cancels.`);
+  }
+}
+
 const ui = new UI(document, {
   togglePlay: () => session.togglePlay(),
   step: () => session.step(),
@@ -81,19 +97,9 @@ const ui = new UI(document, {
     if (!input.cancelEdit()) session.pause();
   },
   setSpeed: (value) => session.setSpeed(value),
-  choosePattern: (id, { keyboard = false } = {}) => {
+  choosePattern: (id, options) => {
     const preset = getPreset(id);
-    if (!preset) return;
-    input.setStamp(preset);
-    stampName = preset.name;
-    ui.showStamp(preset.name, preset.id, { keyboard });
-    if (keyboard) {
-      // The whole placement can be done from the keyboard; Esc goes back to the button.
-      stampReturnFocus = document.activeElement;
-      input.stampAtCursor();
-      canvas.focus();
-      ui.say(`Placing ${preset.name} at ${describeCell(input.cursor)}. Arrow keys move it, R rotates, Enter places, Escape cancels.`);
-    }
+    if (preset) armStamp(preset, options);
   },
   loadPattern: (id) => {
     const preset = getPreset(id);
@@ -123,6 +129,46 @@ const ui = new UI(document, {
 
 ui.setThemePreference(theme.preference);
 
+// Saving, importing, exporting and sharing. Everything that can fail is checked
+// inside Transfer before the board is touched; these wrappers only speak.
+const transfer = new Transfer({
+  engine,
+  session,
+  storage: getStorage(),
+  cancelEdit: () => input.cancelEdit(),
+  onReplaced: () => renderer.fitLive({ maxCellCss: LOAD_MAX_CELL_CSS }),
+});
+const announce = (result) => {
+  if (result.message) ui.say(result.message);
+  return result;
+};
+const pageBase = () => window.location.href.split('#')[0];
+const share = new ShareDialog(document, {
+  save: () => announce(transfer.save()),
+  loadSaved: () => announce(transfer.loadSaved()),
+  savedInfo: () => transfer.savedInfo(),
+  exportRLE: () => transfer.exportRLE(),
+  link: () => transfer.shareLink(pageBase()),
+  parseImport: (text) => transfer.parseImport(text),
+  loadImport: (pattern, name) => announce(transfer.loadPattern(pattern, name)),
+  stampImport: (pattern, name, { keyboard }) =>
+    armStamp({ ...pattern, id: 'import', name }, { keyboard, returnTo: document.getElementById('share-open') }),
+});
+
+// A share link in the address bar is offered for review, never applied by itself.
+function handleHash() {
+  const incoming = transfer.readLink(window.location.hash);
+  if (incoming === null) return;
+  // Handle it once: reloading must not ask again.
+  window.history.replaceState(null, '', pageBase());
+  if (incoming.ok) share.offer(incoming.pattern, 'Shared pattern');
+  else {
+    share.show();
+    share.report(incoming);
+  }
+}
+window.addEventListener('hashchange', handleHash);
+
 input.onStampEnd = (reason) => {
   // Read the focus before the toast, and any button in it, is hidden.
   const active = document.activeElement;
@@ -146,6 +192,8 @@ ui.setBoardSize(engine.width, engine.height);
 
 // A fresh session opens on a paused Gosper glider gun rather than random noise.
 placeCentered(getPreset('gosper'));
+
+handleHash();
 
 let fitted = false;
 renderer.onChange(() => {

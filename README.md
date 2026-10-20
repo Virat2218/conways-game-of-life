@@ -17,6 +17,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 - A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
 - A visual Pattern library of eight classic presets (spaceships, oscillators, a gun and methuselahs), each with a miniature drawn from its own cells, a factual description, and two actions: **Load** (replace the board) and **Stamp** (add to it with a ghost preview, rotation and touch placement)
 - A fresh session opens on a paused, centred Gosper glider gun with a dismissible "Press Play to see it evolve" hint
+- **Share & save**: save one setup in the browser (cells, generation, Restart seed), export the live cells as RLE, import RLE or plaintext (validated completely first, then Load or Stamp), and copy a share link that carries the pattern in the URL fragment. Nothing is sent to a server
 - Keyboard editing: Tab to the board, move a visible cursor with the arrow keys, toggle cells with Enter, and place patterns without a pointing device
 - Wheel, trackpad, pinch and −/+ button zoom with a live px/cell readout; drag panning; Fit board and Fit live cells; a status line stating the 256 × 160 wrapping board
 - A canvas-and-sidebar workspace that stacks on phones, with Play and Step pinned to the bottom edge
@@ -29,6 +30,9 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | --- | --- | --- |
 | Play / pause | Play button (unavailable while a stroke or pattern placement is in progress) | <kbd>Space</kbd> |
 | Step one generation | Step button | <kbd>N</kbd>, or <kbd>→</kbd> when the board is not focused |
+| Save / load a setup | **Share & save** → **Save board** / **Load saved setup**. One slot per browser; loading pauses, is one undo step, and restores the generation and Restart seed. A missing, damaged, newer or wrong-size save is reported and the board is left alone. | — |
+| Export / import | **Share & save** → **Export RLE** downloads the live cells; **Import…** takes a file (up to 256 KiB) or pasted RLE/plaintext, shows what it found, and only then offers **Load on clean board** or **Stamp onto board**. Patterns are limited to the 256 × 160 board and Conway's rule (B3/S23); anything else is refused with a message and nothing changes. | — |
+| Share a link | **Share & save** → **Copy share link**: the live cells as RLE in `#pattern=v1.…` (whole link ≤ 2,000 characters; bigger patterns are offered as a file instead). Opening a link asks before anything changes; if the clipboard is blocked the link is shown selected for copying. | — |
 | Move the keyboard cursor | Tab to the board first. A ring marks the cell; the view follows it and it stays on the board (it does not wrap). | <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>, <kbd>Shift</kbd> for ten cells |
 | Toggle the cell under the cursor | Pauses the simulation; one undo step | <kbd>Enter</kbd> |
 | Draw cells | **Draw** tool (the default): drag to add cells, wherever the stroke starts. Editing pauses a running simulation and leaves it paused; press Play to resume. | — |
@@ -78,6 +82,9 @@ src/session.js     Play state, pause-on-edit, undo/redo orchestration and the re
 src/history.js     Bounded undo/redo stack of before/after board states
 src/input.js       Draw/Erase/Pan tools, pointer painting (coalesced events + Bresenham), stamping, wheel/pan/pinch
 src/theme.js       Theme preference (system / light / dark), persistence, canvas palette reading
+src/serialize.js   RLE export, the versioned save schema, share-link encoding (pure, validating)
+src/transfer.js    Save / load / import / export / link orchestration with atomic failure handling, no DOM
+src/share.js       The Share & save dialog (DOM only)
 src/ui.js          Sidebar, tools, status, pattern library, Help dialog, stamp toast, keyboard shortcuts
 src/main.js        Wiring and the requestAnimationFrame loop
 test/*.test.js     node:test suites for engine, patterns, renderer math, input math, theme contrast

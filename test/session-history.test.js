@@ -430,3 +430,45 @@ test('stamping keeps the board while loading replaces it (the two actions differ
   session.load('Load Glider', place(engine, getPreset('glider')));
   assert.equal(engine.population, 5, 'old cells gone');
 });
+
+test('loading a saved state that differs only in its restart seed is an undoable change', () => {
+  const { engine, session } = make({ width: 40, height: 24 });
+  glider(engine);
+  session.step(); // seed captured from the glider at generation 0
+  session.restart(); // generation 0 again, seed intact
+  const saved = { cells: engine.cells.slice(), generation: 0, seed: { cells: engine.cells.slice() } };
+  // The same cells and generation, but the seed is lost by toggling a cell twice.
+  stroke(session, engine, [[30, 15]]);
+  stroke(session, engine, [[30, 15]]);
+  engine.set(30, 15, 0);
+  assert.equal(session.seed, null);
+  const board = snap(engine);
+  const entries = session.history.entries.length;
+  assert.equal(session.loadState('Load saved setup', saved), true);
+  assert.notEqual(session.seed, null, 'the saved seed is back');
+  assert.deepEqual(snap(engine).cells, board.cells);
+  assert.equal(session.history.entries.length, entries + 1, 'recorded as its own step');
+  assert.equal(session.history.undoLabel, 'Load saved setup');
+  session.undo();
+  assert.equal(session.seed, null, 'Undo undoes the load, not the earlier edit');
+  assert.equal(session.history.undoLabel, 'Draw');
+  session.redo();
+  assert.notEqual(session.seed, null);
+  // Loading the very same state again changes nothing, so adds nothing.
+  const count = session.history.entries.length;
+  session.loadState('Load saved setup', { ...saved, seed: { cells: saved.seed.cells.slice() } });
+  assert.equal(session.history.entries.length, count);
+});
+
+test('a cleanly loaded pattern replaces a stale restart seed even when the cells already match', () => {
+  const { engine, session } = make({ width: 40, height: 24 });
+  const preset = getPreset('glider');
+  for (const [x, y] of preset.cells) engine.set(x + 8, y + 6, 1);
+  assert.equal(session.seed, null);
+  const entries = session.history.entries.length;
+  session.load('Load Glider', place(engine, preset));
+  assert.notEqual(session.seed, null);
+  assert.equal(session.history.entries.length, entries + 1, 'the new seed is an undoable change');
+  session.undo();
+  assert.equal(session.seed, null);
+});

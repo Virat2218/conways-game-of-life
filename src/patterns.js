@@ -97,33 +97,97 @@ function normalize(cells) {
   return { cells: out, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
-export function parsePlaintext(text) {
+// Limits for text that comes from outside (files, pasted text, share links).
+// Dimensions are the board's own, so anything that parses also fits the board.
+export const LIMITS = Object.freeze({
+  maxChars: 262144, // 256 KiB of text
+  maxWidth: 256,
+  maxHeight: 160,
+  maxCells: 256 * 160,
+});
+
+// A parse failure with a machine-readable `code`:
+// 'too-large' | 'dimensions' | 'cells' | 'rule' | 'syntax'.
+export class ParseError extends SyntaxError {
+  constructor(message, code) {
+    super(message);
+    this.name = 'ParseError';
+    this.code = code;
+  }
+}
+
+const dimensionError = (limits) =>
+  new ParseError(`The pattern is larger than the ${limits.maxWidth} × ${limits.maxHeight} board.`, 'dimensions');
+const cellError = (limits) => new ParseError(`The pattern has more than ${limits.maxCells.toLocaleString('en-US')} live cells.`, 'cells');
+
+function checkSize(text, limits) {
+  if (typeof text !== 'string') throw new ParseError('Expected text.', 'syntax');
+  if (text.length > limits.maxChars) {
+    throw new ParseError(`The text is longer than ${Math.round(limits.maxChars / 1024)} KiB.`, 'too-large');
+  }
+}
+
+// Conway's rule in either notation. Anything else is refused, not run as B3/S23.
+const CONWAY_RULES = new Set(['B3/S23', '23/3']);
+
+export function checkRule(rule) {
+  const normalized = String(rule).trim().toUpperCase();
+  if (!CONWAY_RULES.has(normalized)) {
+    throw new ParseError(`Unsupported rule "${String(rule).trim().slice(0, 40)}". Only B3/S23, Conway's rule, is supported.`, 'rule');
+  }
+}
+
+export function parsePlaintext(text, limits = LIMITS) {
+  checkSize(text, limits);
   const cells = [];
   const lines = text.split(/\r?\n/).filter((line) => !line.startsWith('!'));
   // Drop leading/trailing blank lines but keep interior blank rows.
   while (lines.length && lines[0].trim() === '') lines.shift();
   while (lines.length && lines.at(-1).trim() === '') lines.pop();
+  if (lines.length > limits.maxHeight) throw dimensionError(limits);
   lines.forEach((line, y) => {
+    if (line.length > limits.maxWidth) throw dimensionError(limits);
     for (let x = 0; x < line.length; x++) {
       const ch = line[x];
-      if (ch === 'O' || ch === '*') cells.push([x, y]);
-      else if (ch !== '.' && ch !== ' ') throw new SyntaxError(`unexpected '${ch}' at ${x},${y}`);
+      if (ch === 'O' || ch === '*') {
+        if (cells.length >= limits.maxCells) throw cellError(limits);
+        cells.push([x, y]);
+      } else if (ch !== '.' && ch !== ' ' && ch !== '\t') {
+        throw new ParseError(`Unexpected '${ch}' at column ${x + 1}, row ${y + 1}.`, 'syntax');
+      }
     }
   });
   return normalize(cells);
 }
 
-export function parseRLE(text) {
-  const body = text
-    .split(/\r?\n/)
-    .filter((line) => !line.startsWith('#') && !/^\s*x\s*=/.test(line))
-    .join('');
+const RLE_HEADER = /^\s*x\s*=\s*(\d+)\s*,\s*y\s*=\s*(\d+)\s*(?:,\s*rule\s*=\s*(\S+))?\s*$/i;
+
+export function parseRLE(text, limits = LIMITS) {
+  checkSize(text, limits);
+  const bodyLines = [];
+  // Width and height the header claims; the cells may not go beyond them.
+  let declared = null;
+  for (const line of text.split(/\r?\n/)) {
+    if (line.startsWith('#')) continue;
+    const header = RLE_HEADER.exec(line);
+    if (header) {
+      if (Number(header[1]) > limits.maxWidth || Number(header[2]) > limits.maxHeight) throw dimensionError(limits);
+      if (header[3] !== undefined) checkRule(header[3]);
+      declared = { width: Number(header[1]), height: Number(header[2]) };
+      continue;
+    }
+    if (/^\s*x\s*=/i.test(line)) throw new ParseError('Unreadable RLE header.', 'syntax');
+    bodyLines.push(line);
+  }
   const cells = [];
   let x = 0;
   let y = 0;
   let count = '';
-  for (const ch of body) {
+  let terminated = false;
+  for (const ch of bodyLines.join('')) {
     if (ch >= '0' && ch <= '9') {
+      // A run can never be longer than the board, so long digit strings are refused early.
+      if (count.length >= 7) throw dimensionError(limits);
       count += ch;
       continue;
     }
@@ -131,25 +195,39 @@ export function parseRLE(text) {
     count = '';
     if (ch === 'b' || ch === '.') {
       x += n;
+      // A dead run past the board is just as much a sign of damage as a live one.
+      if (x > limits.maxWidth) throw dimensionError(limits);
     } else if (ch === 'o' || ch === 'A') {
+      if (x + n > limits.maxWidth || y >= limits.maxHeight) throw dimensionError(limits);
+      if (declared && (x + n > declared.width || y >= declared.height)) {
+        throw new ParseError(`The cells go beyond the size the header declares (x = ${declared.width}, y = ${declared.height}).`, 'dimensions');
+      }
+      if (cells.length + n > limits.maxCells) throw cellError(limits);
       for (let i = 0; i < n; i++) cells.push([x + i, y]);
       x += n;
     } else if (ch === '$') {
       y += n;
       x = 0;
+      if (y >= limits.maxHeight) throw dimensionError(limits);
     } else if (ch === '!') {
+      terminated = true;
       break;
     } else if (!/\s/.test(ch)) {
-      throw new SyntaxError(`unexpected '${ch}' in RLE`);
+      throw new ParseError(`Unexpected '${ch}' in RLE.`, 'syntax');
     }
   }
+  // Without the closing '!' (or with a count left dangling) the text was probably cut off.
+  if (!terminated) throw new ParseError("The RLE ends before its closing '!', so it may be cut off.", 'syntax');
   return normalize(cells);
 }
 
-// Accepts either RLE or plaintext.
-export function parse(text) {
-  const looksRLE = /^\s*x\s*=/m.test(text) || /[bo$]/.test(text.replace(/^[#!].*$/gm, ''));
-  return looksRLE ? parseRLE(text) : parsePlaintext(text);
+// Accepts either RLE or plaintext. Text is RLE when it has an `x = …` header or
+// anything beyond the plaintext alphabet (. O * and whitespace) once comments go.
+export function parse(text, limits = LIMITS) {
+  checkSize(text, limits);
+  const body = text.replace(/^[#!].*$/gm, '');
+  const looksRLE = /^\s*x\s*=/im.test(text) || !/^[.O*\s]*$/.test(body);
+  return looksRLE ? parseRLE(text, limits) : parsePlaintext(text, limits);
 }
 
 // Rotates 90° clockwise and re-normalizes to the origin.

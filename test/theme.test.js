@@ -41,6 +41,8 @@ const TEXT_PAIRS = [
   ['accent', 'panel'], // eyebrow and population use the accent as text
   ['accent', 'bg'],
   ['accent-ink', 'accent'], // label on the primary button and selected theme option
+  ['danger', 'panel'], // error messages in the Share & save dialog
+  ['danger', 'panel-2'],
 ];
 // Non-text pieces that identify a control or its state (WCAG 3:1).
 const UI_PAIRS = [
