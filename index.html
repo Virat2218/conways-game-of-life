@@ -4,7 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <title>Conway's Game of Life</title>
+    <title>Conway's Game of Life — Interactive Online Simulator</title>
+    <meta name="description" content="Play Conway's Game of Life online. Draw cells, explore gliders and the Gosper gun, and learn how simple rules create complex patterns in this interactive simulator." />
+    <link rel="canonical" href="https://adisakshya.github.io/conways-game-of-life/" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="./assets/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Conway's Game of Life — Interactive Online Simulator" />
+    <meta property="og:description" content="Play Conway's Game of Life online. Draw cells, explore gliders and the Gosper gun, and learn how simple rules create complex patterns in this interactive simulator." />
+    <meta property="og:url" content="https://adisakshya.github.io/conways-game-of-life/" />
+    <meta property="og:image" content="https://adisakshya.github.io/conways-game-of-life/assets/social-preview.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Conway's Game of Life simulator showing the Gosper glider gun on a dark grid." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Conway's Game of Life — Interactive Online Simulator" />
+    <meta name="twitter:description" content="Play Conway's Game of Life online. Draw cells, explore gliders and the Gosper gun, and learn how simple rules create complex patterns in this interactive simulator." />
+    <meta name="twitter:image" content="https://adisakshya.github.io/conways-game-of-life/assets/social-preview.png" />
+    <meta name="twitter:image:alt" content="Conway's Game of Life simulator showing the Gosper glider gun on a dark grid." />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Conway's Game of Life",
+  "url": "https://adisakshya.github.io/conways-game-of-life/",
+  "description": "Play Conway's Game of Life online. Draw cells, explore gliders and the Gosper gun, and learn how simple rules create complex patterns in this interactive simulator.",
+  "image": "https://adisakshya.github.io/conways-game-of-life/assets/social-preview.png",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any operating system with a modern web browser",
+  "browserRequirements": "Requires JavaScript and Canvas 2D support.",
+  "isAccessibleForFree": true,
+  "inLanguage": "en"
+}
+    </script>
     <script>
       // Pick the theme before first paint so there is no flash of the wrong one.
       // An explicit choice wins; otherwise follow the system. Keep in step with
@@ -223,9 +257,43 @@
 
       <footer class="app-footer">
         <span>Devised by John Horton Conway, 1970</span>
+        <a href="#about">About &amp; rules</a>
         <span>B3 / S23</span>
       </footer>
     </div>
+
+    <section class="about-section" aria-label="About and rules">
+      <details id="about" class="about-details">
+        <summary>About &amp; rules: explore Conway's Game of Life</summary>
+        <div class="about-content">
+          <h2>What is Conway's Game of Life?</h2>
+          <p>Conway's Game of Life is a cellular automaton devised by mathematician John Horton Conway in 1970. It is a zero-player game: you choose the starting arrangement, then the rules determine what happens next. Each square on the grid is either alive or dead. Simple local interactions can produce repeating shapes, moving patterns and surprising complexity.</p>
+          <h2>The rules: B3/S23</h2>
+          <p>Each cell has eight neighbors: the squares beside it horizontally, vertically and diagonally. Every generation is calculated from the previous one, with all cells updating simultaneously.</p>
+          <ul>
+            <li><strong>Birth:</strong> a dead cell with exactly three live neighbors becomes alive.</li>
+            <li><strong>Survival:</strong> a live cell with two or three live neighbors stays alive.</li>
+            <li><strong>Death:</strong> a live cell with fewer than two neighbors dies from underpopulation; with more than three it dies from overcrowding. Other dead cells remain dead.</li>
+          </ul>
+          <p>The shorthand <strong>B3/S23</strong> means birth with three neighbors and survival with two or three.</p>
+          <h2>How to use this online simulator</h2>
+          <p>Choose <strong>Draw</strong> or <strong>Erase</strong>, then drag across the board to add or remove cells. <strong>Play</strong> starts the simulation, <strong>Pause</strong> stops it and <strong>Step</strong> advances one generation. Adjust the speed to inspect a transition or follow a longer experiment. Editing pauses the simulation.</p>
+          <p>In the Pattern library, <strong>Load</strong> replaces the board with a preset; <strong>Stamp</strong> adds a pattern to your existing setup. Pan or zoom to explore, use Undo to recover an edit, and Restart from seed to replay a run. The Help button explains keyboard editing, rotation, local saving and pattern sharing.</p>
+          <h2>Patterns to try</h2>
+          <ul>
+            <li><strong>Glider:</strong> five cells form a spaceship that travels one cell diagonally every four generations.</li>
+            <li><strong>Pulsar:</strong> an oscillator that returns to its original arrangement every three generations.</li>
+            <li><strong>Gosper glider gun:</strong> a repeating structure that produces a new glider every 30 generations.</li>
+          </ul>
+          <p>Try predicting the next generation before pressing Step. Compare a repeating oscillator with a moving spaceship, or change a single cell and observe how the outcome changes. These experiments make <strong>emergence</strong> tangible: complex behavior arising from simple rules applied locally.</p>
+          <h2>A finite board with wrapping edges</h2>
+          <p>The conventional Game of Life uses an unbounded grid. This browser implementation uses a finite <strong>256 × 160</strong> board whose opposite edges connect. A pattern leaving one side returns on the other. Gliders can eventually collide with their source, so long-running results can differ from those on an unbounded grid.</p>
+          <h2>Learn more and explore the code</h2>
+          <p>Read the <a href="https://conwaylife.com/wiki/Conway%27s_Game_of_Life">LifeWiki introduction to Conway's Game of Life</a> or explore the <a href="https://github.com/adisakshya/conways-game-of-life">simulator's source code and contribution guide on GitHub</a>.</p>
+        </div>
+      </details>
+      <noscript><p class="no-script">The interactive simulator requires JavaScript. You can still expand About &amp; rules above to learn how Conway's Game of Life works.</p></noscript>
+    </section>
 
     <dialog class="help share" id="share" aria-labelledby="share-title">
       <div class="help-head">

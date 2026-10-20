@@ -101,6 +101,13 @@ Design notes:
 - **Timing.** The simulation is driven by `requestAnimationFrame` (never `setInterval`) with at most 10 steps per frame, so background tabs stay throttled.
 - **Deployment.** `.github/workflows/pages.yml` publishes the site files to GitHub Pages on every push to `master`. All asset paths are relative so the site works under `/conways-game-of-life/`.
 
+## Search and sharing
+
+The page includes crawlable rules and pattern explanations, search metadata, a
+canonical URL, a sitemap and social-preview assets. See [the SEO handoff](docs/seo.md)
+for Search Console verification and post-deployment checks. Indexing and search
+rankings are not guaranteed.
+
 ## License
 
 [MIT](LICENSE)
