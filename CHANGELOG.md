@@ -15,7 +15,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added a Light / Dark / System theme switch. The choice is saved in the browser; System follows the OS. The page and the board both re-theme immediately, even while paused.
 - Added − / + zoom buttons with a px/cell readout (disabled at the limits), a Live cells fit that frames the living cells with a margin (or the whole board when empty), and a permanent "256 × 160 · Wrapping edges" status line.
 - The Pattern library shows a miniature, category and short factual description for each preset, with separate **Load** (clean board, paused at generation 0, becomes the Restart seed, one undo step) and **Stamp** (keeps the board, ghost preview, rotation, touch placement) actions. A new session opens on a centred, paused Gosper glider gun with a dismissible start hint instead of a random board; Randomize is still available.
-
 - The board can be edited from the keyboard: it is focusable, arrows move a visible cursor (Shift moves ten cells; it clamps at the edges and the view follows), Enter toggles the cell as one undoable step, and Stamp from the keyboard places a pattern with arrows, R, Enter and Esc. While the board has focus ArrowRight moves the cursor instead of stepping (N still steps, and ArrowRight steps elsewhere). Cursor moves are announced once after a short pause; the toggle result is announced at once.
 
 ### Fixed
