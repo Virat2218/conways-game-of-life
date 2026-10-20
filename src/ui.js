@@ -36,7 +36,7 @@ export class UI {
       announcer: root.getElementById('announcer'),
     };
     this.themeInputs = [...root.querySelectorAll('input[name="theme"]')];
-    this.shown = { generation: -1, population: -1, running: null };
+    this.shown = { generation: -1, population: -1, running: null, editing: null };
     this.announced = { text: '', time: -Infinity };
 
     this.bindButton(this.el.play, actions.togglePlay);
@@ -168,16 +168,19 @@ export class UI {
     e.preventDefault();
   }
 
-  update({ running, generation, population }) {
+  update({ running, editing = false, generation, population }) {
     const { el, shown } = this;
-    if (running !== shown.running) {
+    if (running !== shown.running || editing !== shown.editing) {
       shown.running = running;
-      const state = running ? 'running' : 'paused';
-      el.play.dataset.state = state;
+      shown.editing = editing;
+      el.play.dataset.state = running ? 'running' : 'paused';
       el.playLabel.textContent = running ? 'Pause' : 'Play';
-      el.play.title = running ? 'Pause (Space)' : 'Play (Space)';
-      el.status.dataset.state = state;
-      el.statusText.textContent = running ? 'Running' : 'Paused';
+      el.status.dataset.state = editing ? 'editing' : running ? 'running' : 'paused';
+      el.statusText.textContent = editing ? 'Editing' : running ? 'Running' : 'Paused';
+      // Play and Step are unavailable mid-edit. aria-disabled (rather than
+      // disabled) keeps them focusable and lets the tooltip and note explain why.
+      this.setBlocked(el.play, editing, running ? 'Pause (Space)' : 'Play (Space)');
+      this.setBlocked(el.step, editing, 'Step one generation (N or →)');
     }
     if (generation !== shown.generation) {
       shown.generation = generation;
@@ -188,6 +191,18 @@ export class UI {
       el.population.textContent = population.toLocaleString();
     }
     this.announce(running, generation, population);
+  }
+
+  setBlocked(button, blocked, title) {
+    if (blocked) {
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('aria-describedby', 'edit-note');
+      button.title = 'Finish or cancel the edit first';
+    } else {
+      button.removeAttribute('aria-disabled');
+      button.removeAttribute('aria-describedby');
+      button.title = title;
+    }
   }
 
   announce(running, generation, population) {
