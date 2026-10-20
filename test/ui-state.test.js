@@ -82,3 +82,43 @@ test('showTool checks the matching radio, marks the board and refreshes the text
   assert.equal(ui.el.board.dataset.tool, 'pan');
   assert.equal(ui.el.toolLabel.textContent, 'Pan the view');
 });
+
+function chord(key, extra, target = outside) {
+  return { key, target, repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, preventDefault() { this.prevented = true; }, ...extra };
+}
+
+function historyActions() {
+  const calls = [];
+  const record = (n) => () => calls.push(n);
+  return { calls, actions: { undo: record('undo'), redo: record('redo'), togglePlay: record('play'), step: record('step'), clear: record('clear'), zoomIn() {}, zoomOut() {}, fit() {}, rotate() {}, escape() {} } };
+}
+
+test('Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z and Ctrl+Y redo', () => {
+  const { calls, actions } = historyActions();
+  const press = (e) => UI.prototype.onKeyDown.call({ actions }, e);
+  const undoPress = chord('z', { ctrlKey: true });
+  press(undoPress);
+  press(chord('z', { metaKey: true }));
+  press(chord('Z', { ctrlKey: true, shiftKey: true }));
+  press(chord('z', { metaKey: true, shiftKey: true }));
+  press(chord('y', { ctrlKey: true }));
+  assert.deepEqual(calls, ['undo', 'undo', 'redo', 'redo', 'redo']);
+  assert.equal(undoPress.prevented, true);
+});
+
+test('history shortcuts leave text fields, selects, dialogs, Alt chords and plain keys alone', () => {
+  const { calls, actions } = historyActions();
+  const press = (e) => UI.prototype.onKeyDown.call({ actions }, e);
+  press(chord('z', { ctrlKey: true }, { tagName: 'INPUT', type: 'text', closest: () => null }));
+  press(chord('z', { ctrlKey: true }, { tagName: 'TEXTAREA', closest: () => null }));
+  press(chord('z', { metaKey: true }, { tagName: 'DIV', isContentEditable: true, closest: () => null }));
+  press(chord('z', { ctrlKey: true }, { tagName: 'SELECT', closest: () => null }));
+  press(chord('z', { ctrlKey: true }, { tagName: 'BUTTON', closest: (sel) => (sel === 'dialog' ? {} : null) }));
+  press(chord('z', { ctrlKey: true, altKey: true }));
+  press(chord('z', {}));
+  press(chord('x', { ctrlKey: true }));
+  assert.deepEqual(calls, [], 'native undo and typing are untouched');
+  // Radios and sliders have no text to undo, so the app shortcut still applies there.
+  press(chord('z', { ctrlKey: true }, { tagName: 'INPUT', type: 'radio', closest: () => null }));
+  assert.deepEqual(calls, ['undo']);
+});

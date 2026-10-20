@@ -552,6 +552,10 @@ kbd {
   gap: 8px;
 }
 
+.btn-wide {
+  grid-column: 1 / -1;
+}
+
 .sim-secondary {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -838,7 +842,24 @@ kbd {
 }
 
 @media (max-width: 440px) {
-  /* Tools get a full-width row; Fit board and Help share the next one. */
+  /* Undo and Redo shrink to icons so they fit beside Fit board and Help. */
+  #undo .btn-text,
+  #redo .btn-text {
+    display: none;
+  }
+
+  #undo,
+  #redo {
+    min-width: var(--tap);
+    padding: 0;
+  }
+
+  /* "Fit" is enough here; the button's name stays "Fit board". */
+  .label-extra {
+    display: none;
+  }
+
+  /* Tools get a full-width row; Undo, Redo, Fit board and Help share the next. */
   .tool-group {
     width: 100%;
   }
@@ -968,6 +989,10 @@ kbd {
   padding: 4px 16px 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.help-body:focus-visible {
+  outline-offset: -3px;
 }
 
 .help-body section {

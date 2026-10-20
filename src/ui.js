@@ -6,6 +6,16 @@ import { PREFERENCES } from './theme.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
+// Controls where Ctrl/Cmd+Z means "undo my typing", so it must stay native.
+const NON_TEXT_INPUTS = new Set(['radio', 'checkbox', 'range', 'button', 'submit', 'reset', 'color', 'file']);
+
+function isTextEntry(target) {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+  if (target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return true;
+  return target.tagName === 'INPUT' && !NON_TEXT_INPUTS.has(target.type);
+}
+
 const TOOL_TEXT = {
   draw: { label: 'Draw cells', hint: 'Draw: drag to add cells.' },
   erase: { label: 'Erase cells', hint: 'Erase: drag to remove cells.' },
@@ -18,7 +28,7 @@ const ANNOUNCE_PAUSED_MS = 1000;
 
 export class UI {
   // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
-  //            setSpeed, choosePattern, rotate, setTheme, setTool }
+  //            setSpeed, choosePattern, rotate, setTheme, setTool, undo, redo, restart }
   constructor(root, actions) {
     this.actions = actions;
     this.root = root;
@@ -29,6 +39,9 @@ export class UI {
       clear: root.getElementById('clear'),
       random: root.getElementById('random'),
       fit: root.getElementById('fit'),
+      undo: root.getElementById('undo'),
+      redo: root.getElementById('redo'),
+      restart: root.getElementById('restart'),
       speed: root.getElementById('speed'),
       speedValue: root.getElementById('speed-value'),
       generation: root.getElementById('generation'),
@@ -53,7 +66,7 @@ export class UI {
     this.toolInputs = [...root.querySelectorAll('input[name="tool"]')];
     this.tool = 'draw';
     this.placing = null;
-    this.shown = { generation: -1, population: -1, running: null, editing: null };
+    this.shown = { generation: -1, population: -1, running: null, editing: null, history: '' };
     this.announced = { text: '', time: -Infinity };
 
     this.bindButton(this.el.play, actions.togglePlay);
@@ -61,6 +74,9 @@ export class UI {
     this.bindButton(this.el.clear, actions.clear);
     this.bindButton(this.el.random, actions.randomize);
     this.bindButton(this.el.fit, actions.fit);
+    this.bindButton(this.el.undo, actions.undo);
+    this.bindButton(this.el.redo, actions.redo);
+    this.bindButton(this.el.restart, actions.restart);
 
     this.el.speed.addEventListener('input', () => this.showSpeed());
     this.showSpeed();
@@ -189,6 +205,18 @@ export class UI {
   }
 
   onKeyDown(e) {
+    // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z (or Ctrl+Y) redoes, except where the
+    // browser's own text undo should win, and inside the Help dialog.
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const key = e.key.toLowerCase();
+      const undo = key === 'z' && !e.shiftKey;
+      const redo = (key === 'z' && e.shiftKey) || (key === 'y' && e.ctrlKey && !e.shiftKey);
+      if (!undo && !redo) return;
+      if (isTextEntry(e.target) || e.target?.closest?.('dialog')) return;
+      (undo ? this.actions.undo : this.actions.redo)();
+      e.preventDefault();
+      return;
+    }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     // Keys inside the Help dialog (Escape to close, Tab, Enter on Close) belong to it.
     if (e.target?.closest?.('dialog')) return;
@@ -239,7 +267,7 @@ export class UI {
     e.preventDefault();
   }
 
-  update({ running, editing = false, generation, population }) {
+  update({ running, editing = false, generation, population, history = {} }) {
     const { el, shown } = this;
     if (running !== shown.running || editing !== shown.editing) {
       shown.running = running;
@@ -253,6 +281,7 @@ export class UI {
       this.setBlocked(el.play, editing, running ? 'Pause (Space)' : 'Play (Space)');
       this.setBlocked(el.step, editing, 'Step one generation (N or →)');
     }
+    this.updateHistory(editing, history);
     if (generation !== shown.generation) {
       shown.generation = generation;
       el.generation.textContent = generation.toLocaleString();
@@ -262,6 +291,34 @@ export class UI {
       el.population.textContent = population.toLocaleString();
     }
     this.announce(running, generation, population);
+  }
+
+  // Undo, Redo and Restart: unavailable when there is nothing to do, and while
+  // an edit is in progress (the same rule as Play and Step).
+  updateHistory(editing, { canUndo = false, canRedo = false, canRestart = false, undoLabel = null, redoLabel = null } = {}) {
+    const key = [editing, canUndo, canRedo, canRestart, undoLabel, redoLabel].join('|');
+    if (key === this.shown.history) return;
+    this.shown.history = key;
+    const { undo, redo, restart } = this.el;
+    this.setAvailable(undo, canUndo, editing, `Undo ${undoLabel} (Ctrl/Cmd+Z)`, 'Nothing to undo');
+    this.setAvailable(redo, canRedo, editing, `Redo ${redoLabel} (Ctrl/Cmd+Shift+Z)`, 'Nothing to redo');
+    this.setAvailable(restart, canRestart, editing, 'Restart from the initial setup at generation 0', 'Nothing to restart: press Play or Step first');
+  }
+
+  setAvailable(button, available, editing, title, emptyTitle) {
+    if (editing) return this.setBlocked(button, true, title);
+    if (available) return this.setBlocked(button, false, title);
+    button.setAttribute('aria-disabled', 'true');
+    button.removeAttribute('aria-describedby');
+    button.title = emptyTitle;
+  }
+
+  // Short message for screen readers, bypassing the throttled status updates.
+  say(text) {
+    // A repeat of the same words would not be re-read, so alternate a trailing space.
+    this.sayFlip = !this.sayFlip;
+    this.el.announcer.textContent = this.sayFlip ? text : `${text}\u00a0`;
+    this.announced = { text: '', time: performance.now() };
   }
 
   setBlocked(button, blocked, title) {

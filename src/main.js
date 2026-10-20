@@ -61,11 +61,27 @@ const ui = new UI(document, {
   rotate: () => input.rotateStamp(),
   setTheme: (preference) => theme.setPreference(preference),
   setTool: (tool) => input.setTool(tool),
+  undo: () => {
+    const entry = session.undo();
+    if (entry) ui.say(`Undid ${entry.label}`);
+  },
+  redo: () => {
+    const entry = session.redo();
+    if (entry) ui.say(`Redid ${entry.label}`);
+  },
+  restart: () => {
+    if (session.restart()) ui.say('Restarted from the initial setup');
+  },
 });
 
 ui.setThemePreference(theme.preference);
 
 input.onStampEnd = () => ui.hideStamp();
+input.onTransaction = (phase, info) => {
+  if (phase === 'begin') session.beginTransaction();
+  else if (phase === 'commit') session.commitTransaction(info.label);
+  else session.abortTransaction();
+};
 input.onToolChange = (tool) => ui.showTool(tool);
 ui.showTool(input.tool);
 ui.setBoardSize(engine.width, engine.height);
@@ -94,6 +110,13 @@ function frame(now) {
     editing: input.editing,
     generation: engine.generation,
     population: engine.population,
+    history: {
+      canUndo: session.canUndo,
+      canRedo: session.canRedo,
+      canRestart: session.canRestart,
+      undoLabel: session.history.undoLabel,
+      redoLabel: session.history.redoLabel,
+    },
   });
   requestAnimationFrame(frame);
 }
