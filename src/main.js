@@ -1,7 +1,8 @@
 import { Engine, Clock } from './engine.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
-import { UI, watchTheme } from './ui.js';
+import { UI } from './ui.js';
+import { createThemeController, readThemeColors } from './theme.js';
 import { getPreset } from './patterns.js';
 
 const canvas = document.getElementById('board');
@@ -9,6 +10,24 @@ const engine = new Engine();
 const renderer = new Renderer(canvas, engine);
 const input = new Input(canvas, renderer, engine);
 const clock = new Clock(10);
+
+// Storage access itself can throw (blocked cookies, sandboxed frames).
+function getStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// Updates data-theme, then re-reads the canvas palette so the board changes
+// with the page even while paused.
+const theme = createThemeController({
+  root: document.documentElement,
+  storage: getStorage(),
+  mediaQuery: window.matchMedia('(prefers-color-scheme: dark)'),
+  onChange: () => renderer.setColors(readThemeColors()),
+});
 
 let running = false;
 
@@ -43,13 +62,15 @@ const ui = new UI(document, {
     const preset = getPreset(id);
     if (!preset) return;
     input.setStamp(preset);
-    ui.showStamp(preset.name);
+    ui.showStamp(preset.name, preset.id);
   },
   rotate: () => input.rotateStamp(),
+  setTheme: (preference) => theme.setPreference(preference),
 });
 
+ui.setThemePreference(theme.preference);
+
 input.onStampEnd = () => ui.hideStamp();
-watchTheme((colors) => renderer.setColors(colors));
 
 engine.randomize(0.25);
 

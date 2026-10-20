@@ -1,6 +1,8 @@
-// Toolbar, stats, stamp toast and keyboard shortcuts. Translates DOM events into actions.
+// Sidebar, status, theme switch, stamp toast and keyboard shortcuts. Translates
+// DOM events into actions; owns no simulation state.
 
 import { PRESETS } from './patterns.js';
+import { PREFERENCES } from './theme.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
@@ -8,41 +10,14 @@ const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 const ANNOUNCE_RUNNING_MS = 5000;
 const ANNOUNCE_PAUSED_MS = 1000;
 
-const THEME_VARS = {
-  background: '--board-background',
-  board: '--board',
-  cell: '--cell',
-  gridMinor: '--grid-minor',
-  gridMajor: '--grid-major',
-  hover: '--hover',
-  ghost: '--ghost',
-};
-
-// Reads the canvas palette from CSS custom properties.
-export function readThemeColors(element = document.documentElement) {
-  const style = getComputedStyle(element);
-  const colors = {};
-  for (const [key, name] of Object.entries(THEME_VARS)) {
-    const value = style.getPropertyValue(name).trim();
-    if (value) colors[key] = value;
-  }
-  return colors;
-}
-
-// Calls `fn` with fresh colors whenever the color scheme flips.
-export function watchTheme(fn) {
-  const query = window.matchMedia('(prefers-color-scheme: dark)');
-  query.addEventListener('change', () => fn(readThemeColors()));
-  fn(readThemeColors());
-}
-
 export class UI {
   // actions: { togglePlay, step, clear, randomize, fit, zoomIn, zoomOut, escape,
-  //            setSpeed, choosePattern, rotate }
+  //            setSpeed, choosePattern, rotate, setTheme }
   constructor(root, actions) {
     this.actions = actions;
     this.el = {
       play: root.getElementById('play'),
+      playLabel: root.getElementById('play-label'),
       step: root.getElementById('step'),
       clear: root.getElementById('clear'),
       random: root.getElementById('random'),
@@ -51,13 +26,16 @@ export class UI {
       speedValue: root.getElementById('speed-value'),
       generation: root.getElementById('generation'),
       population: root.getElementById('population'),
-      pattern: root.getElementById('pattern'),
+      status: root.getElementById('status'),
+      statusText: root.getElementById('status-text'),
+      library: root.getElementById('library'),
       toast: root.getElementById('toast'),
       toastText: root.getElementById('toast-text'),
       toastRotate: root.getElementById('toast-rotate'),
       toastCancel: root.getElementById('toast-cancel'),
       announcer: root.getElementById('announcer'),
     };
+    this.themeInputs = [...root.querySelectorAll('input[name="theme"]')];
     this.shown = { generation: -1, population: -1, running: null };
     this.announced = { text: '', time: -Infinity };
 
@@ -67,40 +45,69 @@ export class UI {
     this.bindButton(this.el.random, actions.randomize);
     this.bindButton(this.el.fit, actions.fit);
 
-    this.el.speed.addEventListener('input', () => {
-      const value = Number(this.el.speed.value);
-      this.el.speedValue.value = `${value}/s`;
-      actions.setSpeed(value);
-    });
+    this.el.speed.addEventListener('input', () => this.showSpeed());
+    this.showSpeed();
 
-    for (const p of PRESETS) {
-      const option = root.createElement('option');
-      option.value = p.id;
-      option.textContent = p.name;
-      this.el.pattern.append(option);
-    }
-    this.el.pattern.addEventListener('change', () => {
-      const id = this.el.pattern.value;
-      if (!id) return;
-      actions.choosePattern(id);
-      // Reset so the same preset can be picked again, and release focus so
-      // R and Esc reach the shortcuts instead of the select's type-ahead.
-      this.el.pattern.value = '';
-      this.el.pattern.blur();
-    });
+    this.buildLibrary(root);
     this.bindButton(this.el.toastRotate, actions.rotate);
     this.bindButton(this.el.toastCancel, actions.escape);
+
+    for (const input of this.themeInputs) {
+      input.addEventListener('change', () => {
+        if (input.checked && PREFERENCES.includes(input.value)) actions.setTheme(input.value);
+      });
+    }
 
     root.addEventListener('keydown', (e) => this.onKeyDown(e));
   }
 
-  showStamp(name) {
-    this.el.toastText.textContent = `Placing ${name} — click or drag and release to place.`;
+  showSpeed() {
+    const { speed, speedValue } = this.el;
+    const value = Number(speed.value);
+    speedValue.value = `${value} gen / sec`;
+    const pct = ((value - Number(speed.min)) / (Number(speed.max) - Number(speed.min))) * 100;
+    speed.style.setProperty('--fill', `${pct}%`);
+    this.actions.setSpeed(value);
+  }
+
+  buildLibrary(root) {
+    this.libraryButtons = new Map();
+    for (const preset of PRESETS) {
+      const item = root.createElement('li');
+      const button = root.createElement('button');
+      button.type = 'button';
+      button.className = 'pattern-item';
+      button.dataset.pattern = preset.id;
+      button.innerHTML =
+        '<span class="pattern-name"></span><span class="pattern-meta"></span>' +
+        '<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg>';
+      button.querySelector('.pattern-name').textContent = preset.name;
+      button.querySelector('.pattern-meta').textContent = `${preset.cells.length} cells`;
+      this.bindButton(button, () => this.actions.choosePattern(preset.id));
+      item.append(button);
+      this.el.library.append(item);
+      this.libraryButtons.set(preset.id, button);
+    }
+  }
+
+  setThemePreference(preference) {
+    for (const input of this.themeInputs) input.checked = input.value === preference;
+  }
+
+  showStamp(name, id) {
+    const touch = window.matchMedia?.('(pointer: coarse)').matches;
+    this.el.toastText.textContent = `Placing ${name} — ${touch ? 'drag, then release to place.' : 'click the board to place.'}`;
     this.el.toast.hidden = false;
+    this.markActivePattern(id);
   }
 
   hideStamp() {
     this.el.toast.hidden = true;
+    this.markActivePattern(null);
+  }
+
+  markActivePattern(id) {
+    for (const [key, button] of this.libraryButtons) button.dataset.active = String(key === id);
   }
 
   bindButton(button, action) {
@@ -165,9 +172,12 @@ export class UI {
     const { el, shown } = this;
     if (running !== shown.running) {
       shown.running = running;
-      el.play.setAttribute('aria-pressed', String(running));
-      el.play.setAttribute('aria-label', running ? 'Pause' : 'Play');
+      const state = running ? 'running' : 'paused';
+      el.play.dataset.state = state;
+      el.playLabel.textContent = running ? 'Pause' : 'Play';
       el.play.title = running ? 'Pause (Space)' : 'Play (Space)';
+      el.status.dataset.state = state;
+      el.statusText.textContent = running ? 'Running' : 'Paused';
     }
     if (generation !== shown.generation) {
       shown.generation = generation;
