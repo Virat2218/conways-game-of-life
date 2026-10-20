@@ -201,8 +201,15 @@ kbd {
   background: var(--muted);
 }
 
-.status[data-state="running"] {
+.status[data-state="running"],
+.status[data-state="editing"] {
   color: var(--fg);
+}
+
+/* A ring rather than a dot: the board is being edited, not running. */
+.status[data-state="editing"] .status-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .status[data-state="running"] .status-dot {
@@ -439,6 +446,20 @@ kbd {
 .btn-primary:hover {
   border-color: var(--accent);
   filter: brightness(1.06);
+}
+
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn[aria-disabled="true"]:hover {
+  border-color: var(--border);
+  filter: none;
+}
+
+.btn-primary[aria-disabled="true"]:hover {
+  border-color: var(--accent);
 }
 
 #play .icon-pause,
