@@ -17,6 +17,8 @@ export const DEFAULT_COLORS = {
   gridMajor: 'rgba(22, 101, 52, 0.2)',
   hover: '#176b2e',
   ghost: 'rgba(23, 107, 46, 0.5)',
+  cursor: '#161a17',
+  cursorHalo: '#ffffff',
 };
 
 // --- Pure geometry helpers (unit-tested) -----------------------------------
@@ -41,6 +43,18 @@ export function fitZoomIndex(viewportWidth, viewportHeight, gridWidth, gridHeigh
     if (gridWidth * cs <= viewportWidth && gridHeight * cs <= viewportHeight) best = i;
   }
   return best;
+}
+
+// New offset that brings a cell fully inside the viewport with `margin` to spare,
+// moving as little as possible. A cell too big to leave the margin is centred.
+// Sizes and offsets are in device pixels.
+export function revealOffset(offset, index, cellSize, viewport, margin) {
+  const start = offset + index * cellSize;
+  const end = start + cellSize;
+  if (cellSize + 2 * margin > viewport) return offset + (viewport - cellSize) / 2 - start;
+  if (start < margin) return offset + (margin - start);
+  if (end > viewport - margin) return offset - (end - (viewport - margin));
+  return offset;
 }
 
 // Inclusive bounding box of the live cells in board coordinates, or null when
@@ -114,6 +128,7 @@ export class Renderer {
 
     this.hover = null;
     this.ghost = null;
+    this.cursor = null;
 
     this.layer = document.createElement('canvas');
     this.layer.width = engine.width;
@@ -166,6 +181,37 @@ export class Renderer {
     if (same || (!cell && !this.hover)) return;
     this.hover = cell;
     this.dirty = true;
+  }
+
+  // The keyboard cursor: a cell, or null when the board does not have keyboard focus.
+  setCursor(cell) {
+    const same = cell && this.cursor && cell.x === this.cursor.x && cell.y === this.cursor.y;
+    if (same || (!cell && !this.cursor)) return;
+    this.cursor = cell;
+    this.dirty = true;
+  }
+
+  // Pans just enough to show a cell with a little room around it.
+  revealCell(x, y) {
+    const cs = this.cellSize;
+    const margin = Math.max(cs, Math.round(12 * this.dpr));
+    const ox = revealOffset(Math.round(this.offsetX), x, cs, this.canvas.width, margin);
+    const oy = revealOffset(Math.round(this.offsetY), y, cs, this.canvas.height, margin);
+    if (ox === Math.round(this.offsetX) && oy === Math.round(this.offsetY)) return;
+    this.offsetX = ox;
+    this.offsetY = oy;
+    this.viewChanged();
+  }
+
+  // The cell at the middle of the view, kept on the board.
+  centerCell() {
+    const cs = this.cellSize;
+    const x = Math.floor((this.canvas.width / 2 - Math.round(this.offsetX)) / cs);
+    const y = Math.floor((this.canvas.height / 2 - Math.round(this.offsetY)) / cs);
+    return {
+      x: Math.min(this.engine.width - 1, Math.max(0, x)),
+      y: Math.min(this.engine.height - 1, Math.max(0, y)),
+    };
   }
 
   setGhost(cells) {
@@ -412,6 +458,7 @@ export class Renderer {
     this.drawGrid(cs, ox, oy, x0, x1, y0, y1);
     this.drawGhost(cs, ox, oy);
     this.drawHover(cs, ox, oy);
+    this.drawCursor(cs, ox, oy);
     return true;
   }
 
@@ -463,5 +510,28 @@ export class Renderer {
     ctx.fillRect(x, y + cs - t, cs, t);
     ctx.fillRect(x, y, t, cs);
     ctx.fillRect(x + cs - t, y, t, cs);
+  }
+
+  // A ring in two colours so it reads on live cells, empty cells and the board
+  // edge alike. Below 10 CSS px the ring grows past the cell so it stays visible.
+  drawCursor(cs, ox, oy) {
+    if (!this.cursor) return;
+    const { ctx, colors } = this;
+    const t = Math.max(1, Math.round(this.dpr));
+    const side = Math.max(cs, Math.round(10 * this.dpr));
+    const x = Math.round(ox + (this.cursor.x + 0.5) * cs - side / 2);
+    const y = Math.round(oy + (this.cursor.y + 0.5) * cs - side / 2);
+    const ring = (inset, thickness, color) => {
+      const rx = x + inset;
+      const ry = y + inset;
+      const size = side - 2 * inset;
+      ctx.fillStyle = color;
+      ctx.fillRect(rx, ry, size, thickness);
+      ctx.fillRect(rx, ry + size - thickness, size, thickness);
+      ctx.fillRect(rx, ry, thickness, size);
+      ctx.fillRect(rx + size - thickness, ry, thickness, size);
+    };
+    ring(-t, 4 * t, colors.cursorHalo);
+    ring(0, 2 * t, colors.cursor);
   }
 }

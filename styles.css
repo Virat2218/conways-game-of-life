@@ -27,6 +27,8 @@
   --grid-major: rgba(22, 101, 52, 0.2);
   --hover: #176b2e;
   --ghost: rgba(23, 107, 46, 0.5);
+  --cursor: #161a17;
+  --cursor-halo: #ffffff;
 
   --tap: 40px;
   --radius: 10px;
@@ -55,6 +57,8 @@
   --grid-major: rgba(195, 245, 107, 0.16);
   --hover: #c3f56b;
   --ghost: rgba(195, 245, 107, 0.5);
+  --cursor: #ffffff;
+  --cursor-halo: #0f1214;
 }
 
 *,

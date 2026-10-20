@@ -48,6 +48,13 @@ function placeCentered(pattern) {
   for (const [x, y] of pattern.cells) engine.set(x + o.x, y + o.y, 1);
 }
 
+let stampName = '';
+let stampReturnFocus = null;
+
+// Columns and rows are numbered from 1 for speech.
+const describeCell = ({ x, y }) => `column ${x + 1}, row ${y + 1}`;
+const cellState = ({ x, y }) => (engine.get(x, y) ? 'alive' : 'dead');
+
 const formatCellSize = (css) => (Number.isInteger(css) ? String(css) : css.toFixed(1));
 
 function zoom(steps) {
@@ -73,11 +80,19 @@ const ui = new UI(document, {
     if (!input.cancelEdit()) session.pause();
   },
   setSpeed: (value) => session.setSpeed(value),
-  choosePattern: (id) => {
+  choosePattern: (id, { keyboard = false } = {}) => {
     const preset = getPreset(id);
     if (!preset) return;
     input.setStamp(preset);
-    ui.showStamp(preset.name, preset.id);
+    stampName = preset.name;
+    ui.showStamp(preset.name, preset.id, { keyboard });
+    if (keyboard) {
+      // The whole placement can be done from the keyboard; Esc goes back to the button.
+      stampReturnFocus = document.activeElement;
+      input.stampAtCursor();
+      canvas.focus();
+      ui.say(`Placing ${preset.name} at ${describeCell(input.cursor)}. Arrow keys move it, R rotates, Enter places, Escape cancels.`);
+    }
   },
   loadPattern: (id) => {
     const preset = getPreset(id);
@@ -107,7 +122,15 @@ const ui = new UI(document, {
 
 ui.setThemePreference(theme.preference);
 
-input.onStampEnd = () => ui.hideStamp();
+input.onStampEnd = (reason) => {
+  ui.hideStamp();
+  if (reason === 'placed') ui.say(`Placed ${stampName}`);
+  else if (stampReturnFocus && document.activeElement === canvas) stampReturnFocus.focus();
+  stampReturnFocus = null;
+};
+input.onCursor = (cell) =>
+  ui.sayLater(() => (input.stamp ? `${stampName} at ${describeCell(cell)}` : `${describeCell(cell)}, ${cellState(cell)}`));
+input.onCellToggle = (cell, alive) => ui.say(`${describeCell(cell)}, now ${alive ? 'alive' : 'dead'}`);
 input.onTransaction = (phase, info) => {
   if (phase === 'begin') session.beginTransaction();
   else if (phase === 'commit') session.commitTransaction(info.label);

@@ -155,7 +155,8 @@ export function parse(text) {
 // Rotates 90° clockwise and re-normalizes to the origin.
 export function rotate(pattern) {
   const { cells, height } = pattern;
-  return normalize(cells.map(([x, y]) => [height - 1 - y, x]));
+  // Keep the name, id and metadata: a rotated preset is still that preset.
+  return { ...pattern, ...normalize(cells.map(([x, y]) => [height - 1 - y, x])) };
 }
 
 export const CATEGORIES = {
