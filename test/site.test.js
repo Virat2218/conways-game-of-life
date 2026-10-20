@@ -6,7 +6,10 @@ const root = new URL('../', import.meta.url);
 
 // Asset references only; "#id" fragments point inside the page (the icon sprite).
 function assetRefs(html) {
-  return [...html.matchAll(/\s(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((ref) => !ref.startsWith('#'));
+  // Canonical and educational links are URLs, not deployable assets.
+  const tags = [...html.matchAll(/<(?:script|link)\b[^>]*>/g)].map((m) => m[0]);
+  return tags.filter((tag) => !/rel="canonical"/.test(tag))
+    .flatMap((tag) => [...tag.matchAll(/\s(?:src|href)="([^"]+)"/g)].map((m) => m[1]));
 }
 
 test('index.html references assets with relative paths only', async () => {
@@ -40,7 +43,7 @@ test('.nojekyll is present', async () => {
 
 test('the page is titled and headed Conway\'s Game of Life, with no other branding', async () => {
   const html = await readFile(new URL('index.html', root), 'utf8');
-  assert.match(html, /<title>Conway's Game of Life<\/title>/);
+  assert.match(html, /<title>Conway's Game of Life — Interactive Online Simulator<\/title>/);
   assert.match(html, /<h1[^>]*>Conway's Game of Life<\/h1>/);
   const files = [
     'index.html',
