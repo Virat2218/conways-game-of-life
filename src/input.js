@@ -151,7 +151,7 @@ export class Input {
     if (!arrow && e.key !== 'Enter') return false;
     e.preventDefault();
     // A pointer gesture owns the board until it ends.
-    if (this.stroke || this.pan || this.pinch) return true;
+    if (this.stroke || this.pan || this.pinch || this.stamp?.pointerId != null) return true;
     if (arrow) {
       const n = e.shiftKey ? BIG_STEP : 1;
       this.moveCursor(arrow[0] * n, arrow[1] * n);
@@ -177,7 +177,14 @@ export class Input {
 
   // After the view changes under a shown cursor, keep it visible.
   revealCursor() {
-    if (this.cursorShown && this.cursor) this.renderer.revealCell(this.cursor.x, this.cursor.y);
+    // revealCell announces the view change it makes, which arrives back here.
+    if (this.revealing || !this.cursorShown || !this.cursor) return;
+    this.revealing = true;
+    try {
+      this.renderer.revealCell(this.cursor.x, this.cursor.y);
+    } finally {
+      this.revealing = false;
+    }
   }
 
   hideCursor() {
