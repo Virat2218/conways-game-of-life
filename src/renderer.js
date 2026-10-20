@@ -195,8 +195,11 @@ export class Renderer {
   revealCell(x, y) {
     const cs = this.cellSize;
     const margin = Math.max(cs, Math.round(12 * this.dpr));
-    const ox = revealOffset(Math.round(this.offsetX), x, cs, this.canvas.width, margin);
-    const oy = revealOffset(Math.round(this.offsetY), y, cs, this.canvas.height, margin);
+    // Whole device pixels only: a half-pixel target (a cell larger than the view is
+    // centred) would never compare equal to the rounded offset and would keep
+    // announcing view changes, and the view change itself calls back into here.
+    const ox = Math.round(revealOffset(Math.round(this.offsetX), x, cs, this.canvas.width, margin));
+    const oy = Math.round(revealOffset(Math.round(this.offsetY), y, cs, this.canvas.height, margin));
     if (ox === Math.round(this.offsetX) && oy === Math.round(this.offsetY)) return;
     this.offsetX = ox;
     this.offsetY = oy;

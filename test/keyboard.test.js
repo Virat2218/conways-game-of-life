@@ -4,6 +4,9 @@ import { getPreset } from '../src/patterns.js';
 import { BIG_STEP } from '../src/input.js';
 import { UI } from '../src/ui.js';
 import { revealOffset } from '../src/renderer.js';
+import { Engine } from '../src/engine.js';
+import { Input } from '../src/input.js';
+import { Renderer } from '../src/renderer.js';
 import { setup } from './fake-board.js';
 
 const cursor = (t) => ({ ...t.input.cursor });
@@ -285,4 +288,44 @@ test('a hidden cursor is left alone by view changes, and the wheel hands the vie
   const after = t.log.reveals.length;
   t.viewChanged();
   assert.equal(t.log.reveals.length, after, 'blurred: not tracked');
+});
+
+test('a touch stamp being positioned owns the board: arrows and Enter cannot move or place it', () => {
+  const t = setup({ width: 40, height: 30 });
+  t.input.setStamp(getPreset('glider'));
+  t.down(10, 10, { pointerId: 7, pointerType: 'touch' });
+  const ghost = t.log.ghosts.at(-1);
+  assert.ok(ghost, 'the finger positions the ghost');
+  assert.equal(t.key('ArrowRight').defaultPrevented, true, 'still claimed, so it cannot step either');
+  t.key('ArrowDown');
+  t.key('Enter');
+  assert.deepEqual(t.log.ghosts.at(-1), ghost, 'the ghost stays under the finger');
+  assert.equal(t.engine.population, 0, 'Enter placed nothing');
+  t.up(10, 10, { pointerId: 7, pointerType: 'touch' });
+  assert.equal(t.engine.population, 5, 'releasing places it where the finger was');
+  const cells = [];
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 40; x++) if (t.engine.get(x, y)) cells.push([x, y]);
+  assert.ok(cells.every(([x, y]) => x >= 8 && x <= 12 && y >= 8 && y <= 12), 'at the touch position');
+});
+
+test('revealing the cursor in a tiny odd-sized view settles at once instead of looping', () => {
+  // Real renderer geometry, no DOM: a viewport smaller than one cell plus margins, odd in both axes.
+  for (const [w, h, dpr, zoomIndex] of [[303, 101, 1, 16], [301, 99, 3, 16], [47, 33, 1, 12], [200, 101, 2.625, 16], [51, 51, 1, 16]]) {
+    const engine = new Engine(256, 160);
+    const view = Object.create(Renderer.prototype);
+    Object.assign(view, { engine, canvas: { width: w, height: h }, dpr, zoomIndex, offsetX: 0, offsetY: 0, dirty: false, listeners: new Set(), cursor: null });
+    const input = Object.create(Input.prototype);
+    Object.assign(input, { renderer: view, cursor: { x: 120, y: 80 }, cursorShown: true });
+    let changes = 0;
+    view.onChange(() => {
+      changes++;
+      assert.ok(changes < 10, `view changes keep arriving (${w}x${h} @${dpr})`);
+      input.revealCursor();
+    });
+    input.revealCursor();
+    assert.ok(Number.isInteger(view.offsetX) && Number.isInteger(view.offsetY), `whole device pixels (${w}x${h} @${dpr}): ${view.offsetX}, ${view.offsetY}`);
+    const settled = changes;
+    input.revealCursor();
+    assert.equal(changes, settled, 'a second reveal changes nothing');
+  }
 });
