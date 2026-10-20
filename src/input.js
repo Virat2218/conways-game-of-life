@@ -48,11 +48,16 @@ export function line(x0, y0, x1, y1) {
   }
 }
 
+export const TOOLS = ['draw', 'erase', 'pan'];
+
 export class Input {
   constructor(canvas, renderer, engine) {
     this.canvas = canvas;
     this.renderer = renderer;
     this.engine = engine;
+    // Draw always adds cells, Erase always removes them, Pan only moves the view.
+    this.tool = 'draw';
+    this.onToolChange = null;
     this.stroke = null;
     // { pattern, pointerId, cell } while a preset is waiting to be placed.
     this.stamp = null;
@@ -87,6 +92,18 @@ export class Input {
     return this.stroke !== null || this.stamp !== null;
   }
 
+  // Choosing a tool abandons any edit in progress. Placing a pattern is a
+  // temporary mode on top of the tool, so the tool is untouched while it lasts
+  // and is simply back in force when placement ends.
+  setTool(tool) {
+    if (!TOOLS.includes(tool) || tool === this.tool) return;
+    this.cancelEdit();
+    this.endPan();
+    this.tool = tool;
+    this.renderer.setHover(null);
+    this.onToolChange?.(tool);
+  }
+
   // Escape: abandon the stroke or pattern in progress. Returns false when there
   // was nothing to cancel.
   cancelEdit() {
@@ -112,8 +129,12 @@ export class Input {
       }
       if (this.pinch || this.touchLocked) return;
     }
-    const panButton = e.button === 1 || e.button === 2 || (e.button === 0 && e.shiftKey);
-    if (e.pointerType !== 'touch' && panButton && !this.stroke && !this.pan) {
+    // Right, middle and Shift-drag pan with any tool; the Pan tool pans on a
+    // plain drag (any pointer, a single finger included) unless a pattern is
+    // waiting to be placed.
+    const shortcutPan = e.pointerType !== 'touch' && (e.button === 1 || e.button === 2 || (e.button === 0 && e.shiftKey));
+    const toolPan = this.tool === 'pan' && e.button === 0 && !this.stamp;
+    if ((shortcutPan || toolPan) && !this.stroke && !this.pan) {
       e.preventDefault();
       this.pan = { pointerId: e.pointerId, x: e.clientX, y: e.clientY };
       this.canvas.setPointerCapture(e.pointerId);
@@ -151,13 +172,20 @@ export class Input {
       }
     }
     if (this.pan && e.pointerId === this.pan.pointerId) {
-      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
-      this.pan = null;
-      this.canvas.classList.remove('panning');
+      this.endPan();
       return;
     }
     if (cancelled) this.onPointerCancel(e);
     else this.onPointerUp(e);
+  }
+
+  endPan() {
+    if (!this.pan) return;
+    if (this.canvas.hasPointerCapture(this.pan.pointerId)) {
+      this.canvas.releasePointerCapture(this.pan.pointerId);
+    }
+    this.pan = null;
+    this.canvas.classList.remove('panning');
   }
 
   // --- Pinch ---------------------------------------------------------------
@@ -171,8 +199,10 @@ export class Input {
   }
 
   startPinch() {
-    // A pinch that begins mid-stroke must not leave a stray line behind.
+    // A pinch that begins mid-stroke must not leave a stray line behind, and
+    // it takes over from a one-finger pan.
     if (this.stroke) this.revertStroke();
+    this.endPan();
     if (this.stamp && this.stamp.pointerId !== null) {
       this.stamp.pointerId = null;
       this.updateGhost(null);
@@ -300,7 +330,7 @@ export class Input {
       this.onStampPointerDown(e);
       return;
     }
-    if (e.button !== 0 || this.stroke) return;
+    if (e.button !== 0 || this.stroke || this.tool === 'pan') return;
     const cell = this.renderer.screenToCell(e.clientX, e.clientY);
     if (!cell) return;
     e.preventDefault();
@@ -308,8 +338,7 @@ export class Input {
     this.canvas.setPointerCapture(e.pointerId);
     this.stroke = {
       pointerId: e.pointerId,
-      // Starting on a live cell erases; starting on a dead cell draws.
-      value: this.engine.get(cell.x, cell.y) ? 0 : 1,
+      value: this.tool === 'erase' ? 0 : 1,
       last: cell,
       // Cells this stroke changed, with their previous value, so it can be reverted.
       changed: new Map(),
@@ -385,6 +414,7 @@ export class Input {
   }
 
   updateHover(e) {
-    this.renderer.setHover(this.renderer.screenToCell(e.clientX, e.clientY));
+    // Panning changes no cells, so there is nothing to point at.
+    this.renderer.setHover(this.tool === 'pan' ? null : this.renderer.screenToCell(e.clientX, e.clientY));
   }
 }

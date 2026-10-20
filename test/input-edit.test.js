@@ -1,55 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Engine } from '../src/engine.js';
-import { Input } from '../src/input.js';
 import { getPreset } from '../src/patterns.js';
-
-// Drives the real Input with a fake canvas and renderer. One client pixel is one
-// cell, so clientX/clientY double as cell coordinates.
-function setup({ width = 24, height = 16 } = {}) {
-  const engine = new Engine(width, height);
-  const handlers = {};
-  const captured = new Set();
-  const canvas = {
-    classList: { add() {}, remove() {} },
-    addEventListener: (type, fn) => {
-      handlers[type] = fn;
-    },
-    setPointerCapture: (id) => captured.add(id),
-    releasePointerCapture: (id) => captured.delete(id),
-    hasPointerCapture: (id) => captured.has(id),
-  };
-  const log = { ghosts: [], zooms: [], pans: 0 };
-  const renderer = {
-    cellCss: 8,
-    zoomIndex: 4,
-    screenToCell: (x, y) => (x >= 0 && y >= 0 && x < width && y < height ? { x: Math.floor(x), y: Math.floor(y) } : null),
-    clientToWorld: (x, y) => ({ x, y }),
-    setHover() {},
-    setGhost: (cells) => log.ghosts.push(cells),
-    panBy: () => log.pans++,
-    setZoom() {},
-    zoomBy: (steps) => log.zooms.push(steps),
-  };
-  const input = new Input(canvas, renderer, engine);
-  const editStarts = [];
-  // Record the board as it is at the moment the hook runs.
-  input.onEditStart = () => editStarts.push({ population: engine.population, generation: engine.generation });
-
-  const fire = (type, e) =>
-    handlers[type]({ pointerId: 1, pointerType: 'mouse', button: 0, shiftKey: false, clientX: 0, clientY: 0, preventDefault() {}, ...e });
-  return {
-    engine,
-    input,
-    log,
-    editStarts,
-    captured,
-    down: (x, y, e) => fire('pointerdown', { clientX: x, clientY: y, ...e }),
-    move: (x, y, e) => fire('pointermove', { clientX: x, clientY: y, ...e }),
-    up: (x, y, e) => fire('pointerup', { clientX: x, clientY: y, ...e }),
-    wheel: (deltaY) => fire('wheel', { deltaY, deltaMode: 0, timeStamp: 1000, clientX: 3, clientY: 3 }),
-  };
-}
+import { setup } from './fake-board.js';
 
 const snapshot = (engine) => ({
   cells: Array.from(engine.cells),
@@ -96,9 +48,10 @@ test('cancelling a drawing stroke restores cells, population and generation exac
 
 test('cancelling an erasing stroke restores the cells it removed', () => {
   const t = setup();
+  t.input.setTool('erase');
   seed(t.engine);
   const before = snapshot(t.engine);
-  t.down(5, 2); // starts on a live cell: erases
+  t.down(5, 2);
   t.move(10, 2);
   assert.ok(t.engine.population < before.population);
   t.input.cancelEdit();
