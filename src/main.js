@@ -58,7 +58,9 @@ const cellState = ({ x, y }) => (engine.get(x, y) ? 'alive' : 'dead');
 const formatCellSize = (css) => (Number.isInteger(css) ? String(css) : css.toFixed(1));
 
 function zoom(steps) {
-  if (renderer.zoomBy(steps)) ui.say(`Zoom ${formatCellSize(renderer.renderedCellCss)} pixels per cell`);
+  const zoomed = renderer.zoomBy(steps);
+  input.revealCursor();
+  if (zoomed) ui.say(`Zoom ${formatCellSize(renderer.renderedCellCss)} pixels per cell`);
   else ui.say(steps > 0 ? 'Already at the maximum zoom' : 'Already at the minimum zoom');
 }
 
