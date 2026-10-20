@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Redesigned the interface as a canvas-and-sidebar workspace with a Simulation card, a Pattern library and the rules, stacking on phones with Play and Step pinned to the bottom edge.
+- Added a Light / Dark / System theme switch. The choice is saved in the browser; System follows the OS. The page and the board both re-theme immediately, even while paused.
+
 ## [1.0.0] - 2026-10-18
 
 ### Added
