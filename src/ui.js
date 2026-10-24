@@ -53,6 +53,8 @@ export class UI {
       population: root.getElementById('population'),
       status: root.getElementById('status'),
       statusText: root.getElementById('status-text'),
+      libraryDisclosure: root.getElementById('library-disclosure'),
+      libraryCount: root.getElementById('library-count'),
       library: root.getElementById('library'),
       startHint: root.getElementById('start-hint'),
       startHintClose: root.getElementById('start-hint-close'),
@@ -75,6 +77,15 @@ export class UI {
     this.placing = null;
     this.shown = { generation: -1, population: -1, running: null, editing: null, history: '', view: '' };
     this.announced = { text: '', time: -Infinity };
+    this.libraryMobile = window.matchMedia?.('(max-width: 720px)') ?? null;
+    this.el.libraryDisclosure.querySelector('summary').addEventListener('click', (e) => {
+      if (!this.libraryMobile?.matches) {
+        e.preventDefault();
+        this.el.libraryDisclosure.open = true;
+      }
+    });
+    this.syncLibraryDisclosure();
+    this.libraryMobile?.addEventListener('change', () => this.syncLibraryDisclosure());
 
     this.bindButton(this.el.play, actions.togglePlay);
     this.bindButton(this.el.step, actions.step);
@@ -164,6 +175,7 @@ export class UI {
 
   buildLibrary(root) {
     this.libraryButtons = new Map();
+    this.el.libraryCount.textContent = `(${PRESETS.length})`;
     const svgNS = 'http://www.w3.org/2000/svg';
     for (const preset of PRESETS) {
       const item = root.createElement('li');
@@ -214,12 +226,23 @@ export class UI {
       // A keyboard activation reports detail 0; it moves focus to the board.
       stamp.addEventListener('click', (e) => {
         this.actions.choosePattern(preset.id, { keyboard: e.detail === 0 });
+        this.collapseLibraryForStamp();
         if (e.detail > 0) stamp.blur();
       });
       item.append(preview, body);
       this.el.library.append(item);
       this.libraryButtons.set(preset.id, item);
     }
+  }
+
+  syncLibraryDisclosure() {
+    this.el.libraryDisclosure.open = !this.libraryMobile?.matches;
+  }
+
+  collapseLibraryForStamp() {
+    if (!this.libraryMobile?.matches) return;
+    this.el.libraryDisclosure.open = false;
+    this.el.board.closest('.board-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // One-way: once dismissed (or made unnecessary) the start hint stays gone.

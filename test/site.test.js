@@ -61,3 +61,10 @@ test('the board is described as finite and wrapping, never infinite', async () =
   const html = await readFile(new URL('index.html', root), 'utf8');
   assert.ok(!/infinite/i.test(html), 'index.html must not call the board infinite');
 });
+
+test('the pattern library uses a native disclosure with a labeled phone summary', async () => {
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  assert.match(html, /<details class="library-disclosure" id="library-disclosure" open>/);
+  assert.match(html, /<summary class="library-summary" aria-controls="library-content">[\s\S]*Pattern library[\s\S]*id="library-count"/);
+  assert.match(html, /<div class="library-content" id="library-content">/);
+});

@@ -16,6 +16,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 - Undo and Redo for strokes, placed patterns, Clear and Randomize (the last 50 steps), and Restart from seed to rerun the setup you started from
 - A Help panel (keyboard and touch friendly) that explains the controls and the wrapping board
 - A visual Pattern library of eight classic presets (spaceships, oscillators, a gun and methuselahs), each with a miniature drawn from its own cells, a factual description, and two actions: **Load** (replace the board) and **Stamp** (add to it with a ghost preview, rotation and touch placement)
+- On phones, the Pattern library starts collapsed to keep the board in reach; expand its labeled heading to browse patterns. On larger screens it stays open.
 - A fresh session opens on a paused, centred Gosper glider gun with a dismissible "Press Play to see it evolve" hint
 - **Share & save**: save one setup in the browser (cells, generation, Restart seed), export the live cells as RLE, import RLE or plaintext (validated completely first, then Load or Stamp), and copy a share link that carries the pattern in the URL fragment. Nothing is sent to a server
 - Keyboard editing: Tab to the board, move a visible cursor with the arrow keys, toggle cells with Enter, and place patterns without a pointing device

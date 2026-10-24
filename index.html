@@ -238,10 +238,16 @@
             </div>
           </section>
 
-          <section class="card" aria-labelledby="library-heading">
-            <h2 class="card-head" id="library-heading"><span>Pattern library</span><span class="card-index" aria-hidden="true">02</span></h2>
-            <p class="card-note"><strong>Load</strong> replaces the board with a pattern, paused at generation 0. <strong>Stamp</strong> adds it to the board where you click.</p>
-            <ul class="library" id="library"></ul>
+          <section class="card library-card" aria-labelledby="library-heading">
+            <details class="library-disclosure" id="library-disclosure" open>
+              <summary class="library-summary" aria-controls="library-content">
+                <h2 class="card-head" id="library-heading"><span>Pattern library <span class="library-count" id="library-count"></span></span><span class="card-index" aria-hidden="true">02</span></h2>
+              </summary>
+              <div class="library-content" id="library-content">
+                <p class="card-note"><strong>Load</strong> replaces the board with a pattern, paused at generation 0. <strong>Stamp</strong> adds it to the board where you click.</p>
+                <ul class="library" id="library"></ul>
+              </div>
+            </details>
           </section>
 
           <section class="rules" aria-labelledby="rules-heading">
