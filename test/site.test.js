@@ -61,3 +61,24 @@ test('the board is described as finite and wrapping, never infinite', async () =
   const html = await readFile(new URL('index.html', root), 'utf8');
   assert.ok(!/infinite/i.test(html), 'index.html must not call the board infinite');
 });
+
+test('shortcut controls expose their keyboard shortcuts to assistive technology', async () => {
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  const expected = new Map([
+    ['play', 'Space'],
+    ['step', 'N ArrowRight'],
+    ['clear', 'C'],
+    ['fit', 'F'],
+    ['zoom-in', '+ ='],
+    ['zoom-out', '- _'],
+    ['undo', 'Control+Z Meta+Z'],
+    ['redo', 'Control+Shift+Z Meta+Shift+Z Control+Y'],
+  ]);
+
+  for (const [id, shortcuts] of expected) {
+    const tag = html.match(new RegExp(`<button\\b[^>]*\\bid="${id}"[^>]*>`))?.[0];
+    assert.ok(tag, `#${id} button must exist`);
+    const actual = tag.match(/\baria-keyshortcuts="([^"]+)"/)?.[1];
+    assert.equal(actual, shortcuts, `#${id} must declare ${shortcuts}`);
+  }
+});

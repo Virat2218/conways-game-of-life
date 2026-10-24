@@ -135,25 +135,25 @@
             <p class="tool-label" id="tool-label">Draw cells</p>
             <span class="toolbar-spacer"></span>
             <div class="toolbar-group" role="group" aria-label="History">
-              <button type="button" class="btn btn-icon" id="undo" aria-label="Undo" title="Nothing to undo">
+              <button type="button" class="btn btn-icon" id="undo" aria-label="Undo" aria-keyshortcuts="Control+Z Meta+Z" title="Nothing to undo">
                 <svg class="icon" aria-hidden="true"><use href="#i-undo" /></svg>
               </button>
-              <button type="button" class="btn btn-icon" id="redo" aria-label="Redo" title="Nothing to redo">
+              <button type="button" class="btn btn-icon" id="redo" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y" title="Nothing to redo">
                 <svg class="icon" aria-hidden="true"><use href="#i-redo" /></svg>
               </button>
             </div>
             <div class="toolbar-group" role="group" aria-label="Zoom">
-              <button type="button" class="btn btn-icon" id="zoom-out" aria-label="Zoom out" title="Zoom out (−)">
+              <button type="button" class="btn btn-icon" id="zoom-out" aria-label="Zoom out" aria-keyshortcuts="- _" title="Zoom out (−)">
                 <svg class="icon" aria-hidden="true"><use href="#i-minus" /></svg>
               </button>
               <span class="zoom-value" id="zoom-value" title="Rendered size of one cell, in CSS pixels">8 px/cell</span>
-              <button type="button" class="btn btn-icon" id="zoom-in" aria-label="Zoom in" title="Zoom in (+)">
+              <button type="button" class="btn btn-icon" id="zoom-in" aria-label="Zoom in" aria-keyshortcuts="+ =" title="Zoom in (+)">
                 <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
               </button>
             </div>
             <div class="toolbar-group" role="group" aria-label="Fit view">
               <span class="group-caption" aria-hidden="true">Fit</span>
-              <button type="button" class="btn" id="fit" aria-label="Fit board" title="Show the whole board (F)">Board</button>
+              <button type="button" class="btn" id="fit" aria-label="Fit board" aria-keyshortcuts="F" title="Show the whole board (F)">Board</button>
               <button type="button" class="btn" id="fit-live" aria-label="Fit live cells" title="Zoom to the live cells">Live cells</button>
             </div>
             <div class="toolbar-group toolbar-end">
@@ -207,12 +207,12 @@
             </dl>
             <p class="visually-hidden" id="edit-note">Unavailable while you are editing the board. Finish or cancel the edit first.</p>
             <div class="sim-actions">
-              <button type="button" class="btn btn-primary" id="play" data-state="paused" title="Play (Space)">
+              <button type="button" class="btn btn-primary" id="play" data-state="paused" aria-keyshortcuts="Space" title="Play (Space)">
                 <svg class="icon icon-play" aria-hidden="true"><use href="#i-play" /></svg>
                 <svg class="icon icon-pause" aria-hidden="true"><use href="#i-pause" /></svg>
                 <span id="play-label">Play</span>
               </button>
-              <button type="button" class="btn" id="step" title="Step one generation (N or →)">
+              <button type="button" class="btn" id="step" aria-keyshortcuts="N ArrowRight" title="Step one generation (N or →)">
                 <svg class="icon" aria-hidden="true"><use href="#i-step" /></svg>
                 <span>Step</span>
               </button>
@@ -231,7 +231,7 @@
                 <svg class="icon" aria-hidden="true"><use href="#i-shuffle" /></svg>
                 <span>Randomize</span>
               </button>
-              <button type="button" class="btn" id="clear" title="Clear the board (C)">
+              <button type="button" class="btn" id="clear" aria-keyshortcuts="C" title="Clear the board (C)">
                 <svg class="icon" aria-hidden="true"><use href="#i-trash" /></svg>
                 <span>Clear</span>
               </button>
