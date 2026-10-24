@@ -296,6 +296,12 @@ export const PRESETS = Object.entries(PRESET_SOURCES).map(([id, { name, source }
   ...parse(source),
 }));
 
+export function filterPresets(presets, category = 'all') {
+  if (category === 'all') return [...presets];
+  if (!Object.hasOwn(CATEGORIES, category)) return [];
+  return presets.filter((preset) => preset.category === category);
+}
+
 // SVG path data (in cell units) for a miniature of the pattern: one unit
 // square per live cell, so the preview is the pattern's own coordinates.
 export function previewPath(pattern) {

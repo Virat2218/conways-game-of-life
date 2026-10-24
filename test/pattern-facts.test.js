@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Engine } from '../src/engine.js';
-import { PRESETS, CATEGORIES, getPreset, previewPath, centerOrigin } from '../src/patterns.js';
+import { PRESETS, CATEGORIES, filterPresets, getPreset, previewPath, centerOrigin } from '../src/patterns.js';
 
 function run(preset, generations) {
   const engine = new Engine(96, 96);
@@ -26,6 +26,16 @@ test('every preset has a known category and a description', () => {
     assert.ok(CATEGORIES[p.category], `${p.id} category`);
     assert.ok(p.description.length > 10, `${p.id} description`);
   }
+});
+
+test('filterPresets returns all, matching, empty and unknown-category results without mutation', () => {
+  const presets = PRESETS;
+  assert.deepEqual(filterPresets(presets, 'all'), presets);
+  assert.notEqual(filterPresets(presets, 'all'), presets);
+  assert.deepEqual(filterPresets(presets, 'spaceship').map((p) => p.id), ['glider', 'lwss']);
+  assert.deepEqual(filterPresets(presets, 'unknown'), []);
+  assert.deepEqual(filterPresets([], 'spaceship'), []);
+  assert.equal(presets.length, 8);
 });
 
 test('spaceships and oscillators repeat their shape after the stated period', () => {

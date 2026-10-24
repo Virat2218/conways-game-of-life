@@ -700,6 +700,25 @@ kbd {
   gap: 8px;
 }
 
+.library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.library-filter {
+  min-height: var(--tap);
+  padding-inline: 10px;
+  font-size: 12px;
+}
+
+.library-filter[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
 .pattern-card {
   display: grid;
   grid-template-columns: 76px 1fr;

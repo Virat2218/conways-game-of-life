@@ -1,7 +1,7 @@
 // Sidebar, status, theme switch, stamp toast and keyboard shortcuts. Translates
 // DOM events into actions; owns no simulation state.
 
-import { PRESETS, CATEGORIES, previewPath } from './patterns.js';
+import { PRESETS, CATEGORIES, filterPresets, previewPath } from './patterns.js';
 import { PREFERENCES } from './theme.js';
 
 const FORM_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
@@ -54,6 +54,8 @@ export class UI {
       status: root.getElementById('status'),
       statusText: root.getElementById('status-text'),
       library: root.getElementById('library'),
+      libraryFilters: root.getElementById('library-filters'),
+      libraryFilterStatus: root.getElementById('library-filter-status'),
       startHint: root.getElementById('start-hint'),
       startHintClose: root.getElementById('start-hint-close'),
       toast: root.getElementById('toast'),
@@ -164,6 +166,19 @@ export class UI {
 
   buildLibrary(root) {
     this.libraryButtons = new Map();
+    this.libraryFilterButtons = new Map();
+    this.libraryCategory = 'all';
+    const categories = [['all', 'All'], ...Object.entries(CATEGORIES)];
+    for (const [category, label] of categories) {
+      const button = root.createElement('button');
+      button.type = 'button';
+      button.className = 'btn library-filter';
+      button.textContent = label;
+      button.setAttribute('aria-pressed', String(category === 'all'));
+      button.addEventListener('click', () => this.filterLibrary(category));
+      this.el.libraryFilters.append(button);
+      this.libraryFilterButtons.set(category, button);
+    }
     const svgNS = 'http://www.w3.org/2000/svg';
     for (const preset of PRESETS) {
       const item = root.createElement('li');
@@ -220,6 +235,25 @@ export class UI {
       this.el.library.append(item);
       this.libraryButtons.set(preset.id, item);
     }
+    this.updateLibraryFilter('all', false);
+  }
+
+  filterLibrary(category) {
+    this.updateLibraryFilter(category, true);
+  }
+
+  updateLibraryFilter(category, announce) {
+    this.libraryCategory = category;
+    const visible = new Set(filterPresets(PRESETS, category).map((preset) => preset.id));
+    for (const [id, item] of this.libraryButtons) item.hidden = !visible.has(id);
+    for (const [key, button] of this.libraryFilterButtons) {
+      button.setAttribute('aria-pressed', String(key === category));
+    }
+    if (!announce) return;
+    const label = category === 'all' ? 'all' : CATEGORIES[category]?.toLowerCase() ?? 'no matching';
+    this.el.libraryFilterStatus.textContent = category === 'all'
+      ? `Showing all ${visible.size} patterns.`
+      : `Showing ${visible.size} of ${PRESETS.length} ${label} patterns.`;
   }
 
   // One-way: once dismissed (or made unnecessary) the start hint stays gone.

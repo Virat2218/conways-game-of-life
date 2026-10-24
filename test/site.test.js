@@ -61,3 +61,9 @@ test('the board is described as finite and wrapping, never infinite', async () =
   const html = await readFile(new URL('index.html', root), 'utf8');
   assert.ok(!/infinite/i.test(html), 'index.html must not call the board infinite');
 });
+
+test('the pattern library has an accessible category filter and polite results announcement', async () => {
+  const html = await readFile(new URL('index.html', root), 'utf8');
+  assert.match(html, /id="library-filters" role="group" aria-label="Filter patterns by category"/);
+  assert.match(html, /id="library-filter-status" aria-live="polite" aria-atomic="true"/);
+});
