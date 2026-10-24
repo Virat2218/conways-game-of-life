@@ -83,6 +83,19 @@ test('showTool checks the matching radio, marks the board and refreshes the text
   assert.equal(ui.el.toolLabel.textContent, 'Pan the view');
 });
 
+test('Randomize passes the selected density to its action', () => {
+  const calls = [];
+  const ui = {
+    actions: { randomize: (density) => calls.push(density) },
+    el: { randomDensity: { value: '0.1' } },
+  };
+  for (const density of ['0.1', '0.25', '0.5']) {
+    ui.el.randomDensity.value = density;
+    UI.prototype.randomize.call(ui);
+  }
+  assert.deepEqual(calls, [0.1, 0.25, 0.5]);
+});
+
 function chord(key, extra, target = outside) {
   return { key, target, repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, preventDefault() { this.prevented = true; }, ...extra };
 }

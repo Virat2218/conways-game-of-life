@@ -42,7 +42,7 @@ A fast, crisp, touch-friendly Game of Life in vanilla JavaScript — native ES m
 | Restart from seed | **Restart from seed** button: puts the board back to the setup you started running from, at generation 0, and stays paused. Restart can be undone. | — |
 | Help | **Help** button (also dismissed with <kbd>Esc</kbd> or Close; focus returns to the button) | <kbd>Enter</kbd> on the button |
 | Clear | Clear button | <kbd>C</kbd> |
-| Randomize (25%) | Randomize button: pauses, replaces the board and resets the generation to 0 | — |
+| Randomize (10%, 25% or 50%) | Choose a labelled density, then select Randomize: pauses, replaces the board and resets the generation to 0. Defaults to 25%. | — |
 | Speed | Speed slider (1–120 gen/s) | Arrow keys on the slider |
 | Load a pattern | **Load** on a library card: pauses, cancels any stroke or placement in progress, replaces every cell, resets the generation to 0, makes the pattern the Restart seed and frames it. One undo step. | — |
 | Stamp a pattern | **Stamp** on a library card, then click the board (the board is kept) — or drag and release on touch. Placing is a temporary mode: your tool is back afterwards, and choosing another tool cancels it. | — |

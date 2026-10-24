@@ -39,6 +39,7 @@ export class UI {
       step: root.getElementById('step'),
       clear: root.getElementById('clear'),
       random: root.getElementById('random'),
+      randomDensity: root.getElementById('random-density'),
       fit: root.getElementById('fit'),
       fitLive: root.getElementById('fit-live'),
       zoomIn: root.getElementById('zoom-in'),
@@ -79,7 +80,7 @@ export class UI {
     this.bindButton(this.el.play, actions.togglePlay);
     this.bindButton(this.el.step, actions.step);
     this.bindButton(this.el.clear, actions.clear);
-    this.bindButton(this.el.random, actions.randomize);
+    this.bindButton(this.el.random, () => this.randomize());
     this.bindButton(this.el.fit, actions.fit);
     this.bindButton(this.el.fitLive, actions.fitLive);
     this.bindButton(this.el.zoomIn, actions.zoomIn);
@@ -259,6 +260,10 @@ export class UI {
       // re-activating the button on top of the global play/pause shortcut.
       if (e.detail > 0) button.blur();
     });
+  }
+
+  randomize() {
+    this.actions.randomize(Number(this.el.randomDensity.value));
   }
 
   onKeyDown(e) {

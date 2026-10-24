@@ -617,6 +617,44 @@ kbd {
   border-top: 1px solid var(--border);
 }
 
+.randomize-control {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.randomize-control label {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.randomize-control select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
+.randomize-control select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.randomize-control .btn {
+  width: 100%;
+  min-width: 0;
+}
+
 /* --- Speed slider -------------------------------------------------------- */
 
 .speed {

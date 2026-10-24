@@ -227,11 +227,19 @@
                 <svg class="icon" aria-hidden="true"><use href="#i-restart" /></svg>
                 <span>Restart from seed</span>
               </button>
-              <button type="button" class="btn" id="random" title="Randomize the board (25% alive)">
-                <svg class="icon" aria-hidden="true"><use href="#i-shuffle" /></svg>
-                <span>Randomize</span>
-              </button>
-              <button type="button" class="btn" id="clear" title="Clear the board (C)">
+              <div class="randomize-control">
+                <label for="random-density">Randomize density</label>
+                <select id="random-density" name="random-density">
+                  <option value="0.1">10%</option>
+                  <option value="0.25" selected>25%</option>
+                  <option value="0.5">50%</option>
+                </select>
+                <button type="button" class="btn" id="random" title="Randomize the board at the selected density">
+                  <svg class="icon" aria-hidden="true"><use href="#i-shuffle" /></svg>
+                  <span>Randomize</span>
+                </button>
+              </div>
+              <button type="button" class="btn btn-wide" id="clear" title="Clear the board (C)">
                 <svg class="icon" aria-hidden="true"><use href="#i-trash" /></svg>
                 <span>Clear</span>
               </button>
@@ -420,7 +428,7 @@
           <h3>Playback</h3>
           <ul>
             <li><kbd>Space</kbd> plays or pauses, <kbd>N</kbd> steps one generation (<kbd>→</kbd> too, unless the board has focus), <kbd>C</kbd> clears the board.</li>
-            <li>Randomize fills the board about a quarter full and restarts the generation count.</li>
+            <li>Choose a Randomize density of 10%, 25% or 50%, then select Randomize. It restarts the generation count.</li>
           </ul>
         </section>
         <section>

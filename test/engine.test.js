@@ -135,6 +135,15 @@ test('seeded randomize is deterministic', () => {
   assert.throws(() => a.randomize(1.5), RangeError);
 });
 
+test('seeded randomize produces the selected 10% and 50% densities', () => {
+  for (const density of [0.1, 0.5]) {
+    const engine = new Engine(100, 100);
+    engine.randomize(density, seeded(73));
+    const ratio = engine.population / engine.cells.length;
+    assert.ok(Math.abs(ratio - density) < 0.02, `density ${ratio} is not near ${density}`);
+  }
+});
+
 test('version changes on every mutation', () => {
   const e = new Engine(5, 5);
   const v0 = e.version;
